@@ -34,6 +34,8 @@ header{background:#080808;border-bottom:2px solid #cc0000;padding:7px 18px;displ
 select{background:#111;border:1px solid #252525;border-radius:3px;color:#ccc;font-family:"Inter",sans-serif;font-size:12px;padding:4px 24px 4px 8px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color 0.2s;}
 select:focus,select:hover{border-color:#cc0000;color:#fff;}
 select option{background:#111;color:#ccc;}
+.add-school-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:#cc0000;color:#fff;text-decoration:none;font-family:"Inter",sans-serif;font-size:12px;font-weight:600;letter-spacing:0.4px;padding:5px 12px;border-radius:3px;white-space:nowrap;transition:background 0.15s;}
+.add-school-btn:hover{background:#e11414;}
 
 /* MAP */
 #map-container{flex:1;position:relative;overflow:hidden;cursor:grab;}
@@ -101,6 +103,7 @@ select option{background:#111;color:#ccc;}
   .dd-wrap{flex:1 1 calc(50% - 5px);gap:6px;}
   .dd-label{font-size:10px;}
   select{flex:1;min-width:0;font-size:16px;padding:8px 26px 8px 9px;}
+  .add-school-btn{margin-left:0;flex:1 1 100%;justify-content:center;padding:10px 12px;font-size:14px;}
 
   /* Legend becomes a tappable, collapsible panel so it doesn't cover the map */
   #legend{bottom:12px;left:8px;width:172px;max-width:54vw;padding:8px 10px;max-height:46vh;overflow-y:auto;}
@@ -172,6 +175,7 @@ select option{background:#111;color:#ccc;}
     <span class="dd-label">Specialty:</span>
     <select id="spec-filter"><option value="">All Specialties</option></select>
   </div>
+  <a class="add-school-btn" href="mailto:info@stuntlisting.com?subject=Add%20my%20school%20to%20StuntListing&amp;body=Hi%20StuntListing%20team%2C%0A%0AI%27d%20like%20to%20add%20my%20school%20to%20the%20map.%20Details%20below%3A%0A%0ASchool%20name%3A%0ALocation%20(city%2C%20country)%3A%0AWebsite%3A%0AInstagram%3A%0ASpecialties%3A%0A%0AThanks!">+ Add your school</a>
 </div>
 
 <div id="map-container">
@@ -235,22 +239,57 @@ const HOVER_OK = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
 let W = container.clientWidth, H = container.clientHeight;
 svg.attr("width", W).attr("height", H);
 
-const projection = d3.geoNaturalEarth1().scale(W/5.0).translate([W/2, H/2+10]);
+// Equirectangular — a simple cylindrical projection so the world tiles
+// seamlessly side-to-side. At base scale the whole world is exactly W wide
+// (lon -180..180 maps to x 0..W), which lets us wrap horizontally by drawing
+// identical copies one world-width to the left and right.
+const projection = d3.geoEquirectangular();
+function fitProjection(){ projection.scale(W/(2*Math.PI)).translate([W/2, H/2]); }
+fitProjection();
 const pathGen = d3.geoPath().projection(projection);
 
-const zoom = d3.zoom().scaleExtent([0.5,22]).on("zoom", ev => {
-  g.attr("transform", ev.transform);
-  const k = ev.transform.k;
-  dotGroup.selectAll(".school-dot-g").each(function(d) {
-    if(visibleSchools.has(d)) d3.select(this).attr("transform", `translate(${cx(d)},${cy(d)}) scale(${1/Math.sqrt(k)})`);
+// Keep the map from being dragged off the top/bottom into empty space. When the
+// world is taller than the viewport we clamp to its edges; when it's shorter we
+// lock it vertically centred. Horizontal (x) is left free so it can wrap.
+function clampY(t){
+  const k=t.k, pyT=H/2-W/4, pyB=H/2+W/4;        // screen y of lat +90 / -90 at base
+  if(k*(W/2) >= H) return Math.max(H - k*pyB, Math.min(-k*pyT, t.y));
+  return (H - k*(pyT+pyB))/2;                    // world shorter than viewport → centre
+}
+
+const zoom = d3.zoom()
+  .scaleExtent([1,22])                            // k=1 = whole world fills the width; no zooming out past that
+  .constrain(t => d3.zoomIdentity.translate(t.x, clampY(t)).scale(t.k))
+  .on("zoom", ev => {
+    const t = ev.transform, k = t.k;
+    const worldW = W * k;
+    let wx = t.x % worldW; if(wx > 0) wx -= worldW;   // wrap pan into (-worldW, 0]
+    g.attr("transform", `translate(${wx},${t.y}) scale(${k})`);
+    dotGroup.selectAll(".school-dot-g").each(function(d) {
+      if(visibleSchools.has(d)) d3.select(this).attr("transform", `translate(${cx(d)},${cy(d)}) scale(${1/Math.sqrt(k)})`);
+    });
   });
-});
 svg.call(zoom);
 
 const g = svg.append("g");
-const gridG = g.append("g");
-const countryG = g.append("g");
+// All geometry lives in one referenced group so we can clone it left/right for
+// the horizontal wrap via <use>. The clones are visual-only (pointer-events
+// off) — interaction always happens on the real, centred copy.
+const worldContent = g.append("g").attr("id","world-content");
+const gridG = worldContent.append("g");
+const countryG = worldContent.append("g");
+const cloneL = g.append("use").attr("href","#world-content").attr("xlink:href","#world-content").style("pointer-events","none");
+const cloneR = g.append("use").attr("href","#world-content").attr("xlink:href","#world-content").style("pointer-events","none");
+// Dots sit ABOVE the country clones and are drawn as real elements in three
+// horizontal copies (offsets -W / 0 / +W) so every visible pin stays clickable
+// no matter how far the map is wrapped — unlike the <use> clones below them.
+const DOT_OFFSETS = [-1, 0, 1];
 const dotGroup = g.append("g");
+function positionClones(){
+  cloneL.attr("x", -W); cloneR.attr("x", W);
+  dotGroup.selectAll(".dot-layer").attr("transform", function(){ return `translate(${(this.__m||0)*W},0)`; });
+}
+positionClones();
 
 for(let lon=-180;lon<=180;lon+=30)
   gridG.append("path").datum({type:"LineString",coordinates:[[lon,-85],[lon,85]]}).attr("class","grid-line").attr("d",pathGen);
@@ -305,28 +344,33 @@ function drawPieDot(g, school, overrideColor) {
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderDots() {
-  dotGroup.selectAll(".school-dot-g").remove();
+  dotGroup.selectAll("*").remove();
   const k = d3.zoomTransform(svg.node()).k;
 
-  dotGroup.selectAll(".school-dot-g")
-    .data(SCHOOLS).enter().append("g")
-    .attr("class","school-dot-g")
-    .attr("transform", d=>`translate(${cx(d)},${cy(d)}) scale(${1/Math.sqrt(k)})`)
-    .style("cursor","pointer")
-    .each(function(d){ drawPieDot(d3.select(this), d, null); })
-    .on("click",(ev,d)=>{ev.stopPropagation();showPopup(d,ev);})
-    .on("mouseenter",function(ev,d){
-      if(!HOVER_OK) return; // touch devices use tap (click) instead
-      if(visibleSchools.has(d)){
-        d3.select(this).select("circle,path").attr("opacity",0.85);
-        showPopup(d,ev);
-      }
-    })
-    .on("mouseleave",function(){
-      if(!HOVER_OK) return; // don't auto-hide on touch — keep popup open until tap-away/close
-      d3.select(this).selectAll("circle,path").attr("opacity",1);
-      window._popupHideTimer=setTimeout(()=>{if(!popup.matches(":hover"))popup.classList.remove("active");},220);
-    });
+  // One real, interactive copy of every dot per horizontal world (for the wrap)
+  DOT_OFFSETS.forEach(m => {
+    const layer = dotGroup.append("g").attr("class","dot-layer").attr("transform",`translate(${m*W},0)`);
+    layer.node().__m = m;
+    layer.selectAll(".school-dot-g")
+      .data(SCHOOLS).enter().append("g")
+      .attr("class","school-dot-g")
+      .attr("transform", d=>`translate(${cx(d)},${cy(d)}) scale(${1/Math.sqrt(k)})`)
+      .style("cursor","pointer")
+      .each(function(d){ drawPieDot(d3.select(this), d, null); })
+      .on("click",(ev,d)=>{ev.stopPropagation();showPopup(d,ev);})
+      .on("mouseenter",function(ev,d){
+        if(!HOVER_OK) return; // touch devices use tap (click) instead
+        if(visibleSchools.has(d)){
+          d3.select(this).select("circle,path").attr("opacity",0.85);
+          showPopup(d,ev);
+        }
+      })
+      .on("mouseleave",function(){
+        if(!HOVER_OK) return; // don't auto-hide on touch — keep popup open until tap-away/close
+        d3.select(this).selectAll("circle,path").attr("opacity",1);
+        window._popupHideTimer=setTimeout(()=>{if(!popup.matches(":hover"))popup.classList.remove("active");},220);
+      });
+  });
 
   applyFilters();
 }
@@ -341,7 +385,6 @@ function applyFilters() {
   const singleCat = catFilter.length === 1 ? catFilter[0] : null;
 
   visibleSchools.clear();
-  let count = 0;
 
   dotGroup.selectAll(".school-dot-g").each(function(d){
     // Search match
@@ -361,7 +404,7 @@ function applyFilters() {
 
     const show = matchQ && matchSpec && matchLoc && matchCat;
 
-    if(show){ visibleSchools.add(d); count++; }
+    if(show){ visibleSchools.add(d); }
 
     const el = d3.select(this);
     el.style("display", show ? null : "none");
@@ -384,7 +427,7 @@ function applyFilters() {
 
   const badge = document.getElementById("result-badge");
   const isFiltered = q||spec||loc||catFilter.length<Object.keys(COLORS).length;
-  if(isFiltered){badge.style.display="block";document.getElementById("rc").textContent=count;}
+  if(isFiltered){badge.style.display="block";document.getElementById("rc").textContent=visibleSchools.size;}
   else badge.style.display="none";
 }
 
@@ -471,16 +514,16 @@ document.getElementById("loc-filter").addEventListener("change",e=>{
 });
 
 function zoomToRegion(region) {
-  // Target [lon, lat, scale] for each region
+  // Target [lon, lat, zoom-k] for each region (k relative to whole-world = 1)
   const views = {
-    "USA — West":      [-119, 40,  4.2],
-    "USA — Midwest":   [-93,  42,  4.2],
-    "USA — Northeast": [-74,  42,  5.5],
-    "USA — South":     [-89,  32,  4.2],
-    "Canada":          [-96,  57,  3.0],
-    "Europe":          [15,   52,  3.8],
-    "Asia-Pacific":    [130, -20,  2.2],
-    "Other":           [-60, -20,  2.0],
+    "USA — West":      [-119, 40,  5.3],
+    "USA — Midwest":   [-93,  42,  5.3],
+    "USA — Northeast": [-74,  42,  6.9],
+    "USA — South":     [-89,  32,  5.3],
+    "Canada":          [-96,  57,  3.8],
+    "Europe":          [15,   52,  4.8],
+    "Asia-Pacific":    [130, -20,  2.8],
+    "Other":           [-60, -20,  2.5],
   };
 
   const target = region ? views[region] : null;
@@ -515,9 +558,12 @@ document.getElementById("zoom-reset").addEventListener("click",()=>svg.transitio
 window.addEventListener("resize",()=>{
   W=container.clientWidth;H=container.clientHeight;
   svg.attr("width",W).attr("height",H);
-  projection.scale(W/5.0).translate([W/2,H/2+10]);
+  fitProjection();
+  positionClones();
   countryG.selectAll("path").attr("d",pathGen);
   gridG.selectAll("path").attr("d",pathGen);
+  // Re-apply the current zoom transform so x-wrap / y-clamp recompute for the new size
+  svg.call(zoom.transform, d3.zoomTransform(svg.node()));
   const k=d3.zoomTransform(svg.node()).k;
   dotGroup.selectAll(".school-dot-g").attr("transform",d=>`translate(${cx(d)},${cy(d)}) scale(${1/Math.sqrt(k)})`);
 });

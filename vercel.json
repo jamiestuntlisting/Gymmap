@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/stunt_schools_map_v4.html" }
+  ]
+}

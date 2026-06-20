@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Stunt Training & Specialty Schools — World Map</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:"Inter",sans-serif;background:#080808;color:#f0f0f0;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+body{font-family:"Inter",sans-serif;background:#080808;color:#f0f0f0;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-text-size-adjust:100%;}
 
 /* HEADER */
 header{background:#080808;border-bottom:2px solid #cc0000;padding:7px 18px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:100;}
@@ -38,7 +38,7 @@ select option{background:#111;color:#ccc;}
 /* MAP */
 #map-container{flex:1;position:relative;overflow:hidden;cursor:grab;}
 #map-container:active{cursor:grabbing;}
-#map-svg{width:100%;height:100%;display:block;background:#080808;}
+#map-svg{width:100%;height:100%;display:block;background:#080808;touch-action:none;}
 .grid-line{stroke:rgba(255,255,255,0.045);stroke-width:0.5;fill:none;}
 .country{fill:#080808;stroke:rgba(255,255,255,0.6);stroke-width:0.5;stroke-linejoin:round;}
 .country-border{fill:none;stroke:rgba(255,255,255,0.15);stroke-width:0.3;}
@@ -79,6 +79,61 @@ select option{background:#111;color:#ccc;}
 .zoom-btn{background:rgba(6,6,6,0.95);border:1px solid #2a2a2a;color:#aaa;width:32px;height:32px;border-radius:3px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color 0.15s,border-color 0.15s;user-select:none;}
 .zoom-btn:hover{color:#fff;border-color:#cc0000;}
 #loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#333;font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:3px;z-index:50;}
+
+/* Legend collapse caret — only shown on mobile */
+.legend-caret{display:none;color:#cc0000;font-size:11px;}
+
+/* ─── MOBILE / RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width:760px){
+  /* Header reflows: logo + stats on the top row, search on its own full-width row */
+  header{flex-wrap:wrap;gap:8px 12px;padding:8px 12px;}
+  .logo{font-size:20px;}
+  .logo .sub{font-size:9px;letter-spacing:1px;}
+  .header-right{margin-left:auto;gap:14px;}
+  .stat-num{font-size:16px;}
+  .stat-label{font-size:8px;}
+  .search-wrap{order:5;flex-basis:100%;}
+  .search-wrap input{width:100%;font-size:16px;padding:9px 32px 9px 11px;}
+  #search-clear{font-size:16px;right:11px;}
+
+  /* Toolbar dropdowns stack to two-up / full width and stretch to fill */
+  #toolbar{flex-wrap:wrap;padding:7px 12px;gap:8px;}
+  .dd-wrap{flex:1 1 calc(50% - 5px);gap:6px;}
+  .dd-label{font-size:10px;}
+  select{flex:1;min-width:0;font-size:16px;padding:8px 26px 8px 9px;}
+
+  /* Legend becomes a tappable, collapsible panel so it doesn't cover the map */
+  #legend{bottom:12px;left:8px;width:172px;max-width:54vw;padding:8px 10px;max-height:46vh;overflow-y:auto;}
+  #legend.collapsed{width:auto;}
+  .legend-title{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:0;padding-bottom:0;border-bottom:none;}
+  #legend:not(.collapsed) .legend-title{margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid #1a1a1a;}
+  #legend.collapsed .leg-item,#legend.collapsed .leg-btns{display:none;}
+  .legend-caret{display:inline;transition:transform 0.2s;}
+  #legend.collapsed .legend-caret{transform:rotate(-90deg);}
+  .leg-item{padding:4px 3px;}
+  .leg-name{font-size:11px;}
+
+  /* Popup turns into a bottom sheet (mouse-coordinate positioning is overridden) */
+  #popup{left:0!important;right:0;top:auto!important;bottom:0;width:100%!important;max-width:100%;
+    max-height:64vh;border-radius:14px 14px 0 0;border-left:none;border-right:none;border-bottom:none;
+    border-top:3px solid var(--popup-color,#cc0000);padding:16px 16px calc(22px + env(safe-area-inset-bottom));
+    box-shadow:0 -8px 30px rgba(0,0,0,0.85);}
+  .popup-name{font-size:19px;padding-right:30px;}
+  .popup-loc{font-size:12px;}
+  .popup-link{padding:9px 11px;font-size:13px;}
+  .popup-spec-tag{font-size:11px;padding:3px 8px;}
+  #popup-close{font-size:22px;top:10px;right:14px;padding:2px 4px;}
+
+  /* Bigger, thumb-friendly map controls */
+  .zoom-btns{bottom:14px;right:14px;gap:6px;}
+  .zoom-btn{width:40px;height:40px;font-size:23px;}
+  #result-badge{top:8px;right:8px;font-size:10px;}
+}
+@media (max-width:360px){
+  .logo .sub{display:none;}
+  .header-right{gap:10px;}
+  .dd-wrap{flex-basis:100%;}
+}
 </style>
 </head>
 <body>
@@ -174,6 +229,9 @@ ALL_SPECIALTIES.forEach(s => {
 const svg = d3.select("#map-svg");
 const container = document.getElementById("map-container");
 const popup = document.getElementById("popup");
+// True only on devices with a real hover-capable pointer (desktop mouse). Touch
+// devices fall back to tap interactions so popups don't flash open/closed.
+const HOVER_OK = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
 let W = container.clientWidth, H = container.clientHeight;
 svg.attr("width", W).attr("height", H);
 
@@ -241,6 +299,8 @@ function drawPieDot(g, school, overrideColor) {
         .attr("stroke","rgba(0,0,0,0.4)").attr("stroke-width",0.5);
     });
   }
+  // Transparent hit area on top — enlarges the tap target for touch devices
+  g.append("circle").attr("r", R + 5).attr("fill", "transparent").style("pointer-events", "all");
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -256,12 +316,14 @@ function renderDots() {
     .each(function(d){ drawPieDot(d3.select(this), d, null); })
     .on("click",(ev,d)=>{ev.stopPropagation();showPopup(d,ev);})
     .on("mouseenter",function(ev,d){
+      if(!HOVER_OK) return; // touch devices use tap (click) instead
       if(visibleSchools.has(d)){
         d3.select(this).select("circle,path").attr("opacity",0.85);
         showPopup(d,ev);
       }
     })
     .on("mouseleave",function(){
+      if(!HOVER_OK) return; // don't auto-hide on touch — keep popup open until tap-away/close
       d3.select(this).selectAll("circle,path").attr("opacity",1);
       window._popupHideTimer=setTimeout(()=>{if(!popup.matches(":hover"))popup.classList.remove("active");},220);
     });
@@ -369,7 +431,7 @@ svg.on("click",()=>popup.classList.remove("active"));
 
 // ── LEGEND ────────────────────────────────────────────────────────────────────
 const legendEl = document.getElementById("legend");
-legendEl.innerHTML=`<div class="legend-title">SCHOOL TYPE</div>`;
+legendEl.innerHTML=`<div class="legend-title" id="legend-title">SCHOOL TYPE<span class="legend-caret">▾</span></div>`;
 const catCounts={};
 SCHOOLS.forEach(s=>s.categories.forEach(c=>{catCounts[c]=(catCounts[c]||0)+1;}));
 
@@ -392,6 +454,13 @@ const deselectAll=document.createElement("div");deselectAll.className="leg-btn";
 deselectAll.addEventListener("click",()=>{activeCategories.clear();legendEl.querySelectorAll(".leg-item").forEach(el=>el.classList.add("off"));applyFilters();});
 btnRow.appendChild(showAll);btnRow.appendChild(deselectAll);
 legendEl.appendChild(btnRow);
+
+// Collapsible legend on small screens (keeps the map visible on phones)
+const mqMobile = window.matchMedia("(max-width:760px)");
+if(mqMobile.matches) legendEl.classList.add("collapsed");
+document.getElementById("legend-title").addEventListener("click",()=>{
+  if(mqMobile.matches) legendEl.classList.toggle("collapsed");
+});
 
 // ── DROPDOWNS ────────────────────────────────────────────────────────────────
 document.getElementById("spec-filter").addEventListener("change",e=>{currentSpec=e.target.value;applyFilters();});

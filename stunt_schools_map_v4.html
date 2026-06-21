@@ -34,7 +34,7 @@ header{background:#080808;border-bottom:2px solid #cc0000;padding:7px 18px;displ
 select{background:#111;border:1px solid #252525;border-radius:3px;color:#ccc;font-family:"Inter",sans-serif;font-size:12px;padding:4px 24px 4px 8px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color 0.2s;}
 select:focus,select:hover{border-color:#cc0000;color:#fff;}
 select option{background:#111;color:#ccc;}
-.add-school-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:#cc0000;color:#fff;text-decoration:none;font-family:"Inter",sans-serif;font-size:12px;font-weight:600;letter-spacing:0.4px;padding:5px 12px;border-radius:3px;white-space:nowrap;transition:background 0.15s;}
+.add-school-btn{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:400;display:inline-flex;align-items:center;gap:6px;background:#cc0000;color:#fff;text-decoration:none;font-family:"Inter",sans-serif;font-size:13px;font-weight:600;letter-spacing:0.4px;padding:9px 18px;border-radius:4px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.6);transition:background 0.15s;}
 .add-school-btn:hover{background:#e11414;}
 
 /* MAP */
@@ -103,7 +103,7 @@ select option{background:#111;color:#ccc;}
   .dd-wrap{flex:1 1 calc(50% - 5px);gap:6px;}
   .dd-label{font-size:10px;}
   select{flex:1;min-width:0;font-size:16px;padding:8px 26px 8px 9px;}
-  .add-school-btn{margin-left:0;flex:1 1 100%;justify-content:center;padding:10px 12px;font-size:14px;}
+  .add-school-btn{bottom:calc(14px + env(safe-area-inset-bottom));padding:11px 20px;font-size:14px;}
 
   /* Legend becomes a tappable, collapsible panel so it doesn't cover the map */
   #legend{bottom:12px;left:8px;width:172px;max-width:54vw;padding:8px 10px;max-height:46vh;overflow-y:auto;}
@@ -158,24 +158,9 @@ select option{background:#111;color:#ccc;}
 
 <div id="toolbar">
   <div class="dd-wrap">
-    <span class="dd-label">Location:</span>
-    <select id="loc-filter">
-      <option value="">All Locations</option>
-      <option value="USA — West">USA — West</option>
-      <option value="USA — Midwest">USA — Midwest</option>
-      <option value="USA — Northeast">USA — Northeast</option>
-      <option value="USA — South">USA — South</option>
-      <option value="Canada">Canada</option>
-      <option value="Europe">Europe</option>
-      <option value="Asia-Pacific">Asia-Pacific</option>
-      <option value="Other">Other</option>
-    </select>
-  </div>
-  <div class="dd-wrap">
     <span class="dd-label">Specialty:</span>
     <select id="spec-filter"><option value="">All Specialties</option></select>
   </div>
-  <a class="add-school-btn" href="mailto:info@stuntlisting.com?subject=Add%20my%20school%20to%20StuntListing&amp;body=Hi%20StuntListing%20team%2C%0A%0AI%27d%20like%20to%20add%20my%20school%20to%20the%20map.%20Details%20below%3A%0A%0ASchool%20name%3A%0ALocation%20(city%2C%20country)%3A%0AWebsite%3A%0AInstagram%3A%0ASpecialties%3A%0A%0AThanks!">+ Add your school</a>
 </div>
 
 <div id="map-container">
@@ -191,6 +176,7 @@ select option{background:#111;color:#ccc;}
   </div>
   <div id="legend"></div>
   <div id="result-badge">Showing <b id="rc">0</b> schools</div>
+  <a class="add-school-btn" href="mailto:info@stuntlisting.com?subject=Add%20a%20school%20to%20StuntListing&amp;body=Hi%20StuntListing%20team%2C%0A%0AI%27d%20like%20to%20add%20a%20school%20to%20the%20map.%20Details%20below%3A%0A%0ASchool%20name%3A%0ALocation%20(city%2C%20country)%3A%0AWebsite%3A%0AInstagram%3A%0ASpecialties%3A%0A%0AThanks!">+ Add a school</a>
   <div class="zoom-btns">
     <div class="zoom-btn" id="zoom-in">+</div>
     <div class="zoom-btn" id="zoom-out">−</div>
@@ -527,44 +513,8 @@ document.getElementById("legend-title").addEventListener("click",()=>{
   if(mqMobile.matches) legendEl.classList.toggle("collapsed");
 });
 
-// ── DROPDOWNS ────────────────────────────────────────────────────────────────
+// ── SPECIALTY FILTER ─────────────────────────────────────────────────────────
 document.getElementById("spec-filter").addEventListener("change",e=>{currentSpec=e.target.value;applyFilters();});
-document.getElementById("loc-filter").addEventListener("change",e=>{
-  currentLoc=e.target.value;
-  applyFilters();
-  zoomToRegion(e.target.value);
-});
-
-function zoomToRegion(region) {
-  // Target [lon, lat, zoom-k] for each region (k relative to whole-world = 1)
-  const views = {
-    "USA — West":      [-119, 40,  5.3],
-    "USA — Midwest":   [-93,  42,  5.3],
-    "USA — Northeast": [-74,  42,  6.9],
-    "USA — South":     [-89,  32,  5.3],
-    "Canada":          [-96,  57,  3.8],
-    "Europe":          [15,   52,  4.8],
-    "Asia-Pacific":    [130, -20,  2.8],
-    "Other":           [-60, -20,  2.5],
-  };
-
-  const target = region ? views[region] : null;
-
-  if(!target) {
-    // Reset to full world
-    svg.transition().duration(700).call(zoom.transform, d3.zoomIdentity);
-    return;
-  }
-
-  const [lon, lat, sc] = target;
-  const [px, py] = projection([lon, lat]);
-  const tx = W/2 - sc * px;
-  const ty = H/2 - sc * py;
-  svg.transition().duration(700).call(
-    zoom.transform,
-    d3.zoomIdentity.translate(tx, ty).scale(sc)
-  );
-}
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
 const si=document.getElementById("search-input"),sc=document.getElementById("search-clear");

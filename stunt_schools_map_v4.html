@@ -41,6 +41,8 @@ select option{background:#111;color:#ccc;}
 #map-container{flex:1;position:relative;overflow:hidden;cursor:grab;}
 #map-container:active{cursor:grabbing;}
 #map-svg{width:100%;height:100%;display:block;background:#080808;touch-action:none;}
+.school-dot-g{transition:filter 0.12s;}
+.school-dot-g.selected{filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 7px rgba(255,255,255,0.9));}
 .grid-line{stroke:rgba(255,255,255,0.045);stroke-width:0.5;fill:none;}
 .country{fill:#080808;stroke:rgba(255,255,255,0.6);stroke-width:0.5;stroke-linejoin:round;}
 .country-border{fill:none;stroke:rgba(255,255,255,0.15);stroke-width:0.3;}
@@ -274,7 +276,7 @@ const zoom = d3.zoom()
     let wx = t.x % worldW; if(wx > 0) wx -= worldW;   // wrap pan into (-worldW, 0]
     g.attr("transform", `translate(${wx},${t.y}) scale(${k})`);
     dotGroup.selectAll(".school-dot-g").each(function(d) {
-      if(visibleSchools.has(d)) d3.select(this).attr("transform", `translate(${cx(d)},${cy(d)}) scale(${1/k})`);
+      if(visibleSchools.has(d)) d3.select(this).attr("transform", `translate(${cx(d)},${cy(d)}) scale(${dotScale(k)})`);
     });
   });
 svg.call(zoom);
@@ -310,7 +312,7 @@ SCHOOLS.forEach(s=>{const k=s.lat+","+s.lon;if(!locMap[k])locMap[k]=[];locMap[k]
 function jittered(s){
   const k=s.lat+","+s.lon,grp=locMap[k],i=grp.indexOf(s),n=grp.length;
   if(n===1)return[s.lon,s.lat];
-  const a=(2*Math.PI*i)/n,r=Math.min(0.5*n,2.8);
+  const a=(2*Math.PI*i)/n,r=Math.min(0.3*n,1.5);
   return[s.lon+r*Math.cos(a),s.lat+r*Math.sin(a)];
 }
 function cx(s){const[lo,la]=jittered(s),p=projection([lo,la]);return p?p[0]:-9999;}
@@ -320,9 +322,15 @@ function cy(s){const[lo,la]=jittered(s),p=projection([lo,la]);return p?p[1]:-999
 const activeCategories = new Set(Object.keys(COLORS));
 const visibleSchools = new Set(SCHOOLS);
 let currentSearch = "", currentSpec = "", currentLoc = "";
+let selectedSchool = null; // pin currently clicked — gets a glow highlight
+function markSelected(){ dotGroup.selectAll(".school-dot-g").classed("selected", d => d === selectedSchool); }
 
 // ── PIE DOT DRAWING ───────────────────────────────────────────────────────────
 const R = 5; // base radius
+// Dots hold ~constant screen size but grow a little as you zoom in (capped),
+// so a zoomed-in view reads bigger without the runaway overlap of full scaling.
+const DOT_GROW = 0.2;
+function dotScale(k){ return Math.min(Math.pow(k, DOT_GROW), 1.9) / k; }
 
 function drawPieDot(g, school, overrideColor) {
   g.selectAll("*").remove();
@@ -362,10 +370,10 @@ function renderDots() {
     layer.selectAll(".school-dot-g")
       .data(SCHOOLS).enter().append("g")
       .attr("class","school-dot-g")
-      .attr("transform", d=>`translate(${cx(d)},${cy(d)}) scale(${1/k})`)
+      .attr("transform", d=>`translate(${cx(d)},${cy(d)}) scale(${dotScale(k)})`)
       .style("cursor","pointer")
       .each(function(d){ drawPieDot(d3.select(this), d, null); })
-      .on("click",(ev,d)=>{ev.stopPropagation();track("click",d.name);showPopup(d,ev);})
+      .on("click",(ev,d)=>{ev.stopPropagation();track("click",d.name);selectedSchool=d;markSelected();showPopup(d,ev);})
       .on("mouseenter",function(ev,d){
         if(!HOVER_OK) return; // touch devices use tap (click) instead
         if(visibleSchools.has(d)){
@@ -477,8 +485,8 @@ function showPopup(d, ev) {
   popup.classList.add("active");
 }
 
-document.getElementById("popup-close").addEventListener("click",()=>popup.classList.remove("active"));
-svg.on("click",()=>popup.classList.remove("active"));
+document.getElementById("popup-close").addEventListener("click",()=>{popup.classList.remove("active");selectedSchool=null;markSelected();});
+svg.on("click",()=>{popup.classList.remove("active");selectedSchool=null;markSelected();});
 
 // ── LEGEND ────────────────────────────────────────────────────────────────────
 const legendEl = document.getElementById("legend");
@@ -537,7 +545,7 @@ window.addEventListener("resize",()=>{
   // Re-apply the current zoom transform so x-wrap / y-clamp recompute for the new size
   svg.call(zoom.transform, d3.zoomTransform(svg.node()));
   const k=d3.zoomTransform(svg.node()).k;
-  dotGroup.selectAll(".school-dot-g").attr("transform",d=>`translate(${cx(d)},${cy(d)}) scale(${1/k})`);
+  dotGroup.selectAll(".school-dot-g").attr("transform",d=>`translate(${cx(d)},${cy(d)}) scale(${dotScale(k)})`);
 });
 
 // ── LOAD WORLD MAP ────────────────────────────────────────────────────────────

@@ -64,9 +64,9 @@ select option{background:#111;color:#ccc;}
 #map-svg{width:100%;height:100%;display:block;background:#080808;touch-action:none;}
 .school-dot-g{transition:filter 0.12s;}
 .school-dot-g.selected{filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 7px rgba(255,255,255,0.9));}
-.grid-line{stroke:rgba(255,255,255,0.045);stroke-width:0.5;fill:none;}
-.country{fill:#080808;stroke:rgba(255,255,255,0.6);stroke-width:0.5;stroke-linejoin:round;}
-.country-border{fill:none;stroke:rgba(255,255,255,0.15);stroke-width:0.3;}
+.grid-line{stroke:rgba(255,255,255,0.045);stroke-width:0.5;fill:none;vector-effect:non-scaling-stroke;}
+.country{fill:#080808;stroke:rgba(255,255,255,0.6);stroke-width:0.6;stroke-linejoin:round;vector-effect:non-scaling-stroke;}
+.country-border{fill:none;stroke:rgba(255,255,255,0.15);stroke-width:0.5;vector-effect:non-scaling-stroke;}
 
 /* POPUP */
 #popup{position:absolute;background:rgba(6,6,6,0.97);border:1px solid #1e1e1e;border-top:3px solid var(--popup-color,#cc0000);border-radius:0 4px 4px 4px;padding:12px 14px;width:270px;pointer-events:none;z-index:200;display:none;box-shadow:0 6px 28px rgba(0,0,0,0.8);max-height:82vh;overflow-y:auto;}
@@ -299,7 +299,7 @@ function clampY(t){
 }
 
 const zoom = d3.zoom()
-  .scaleExtent([1,22])                            // k=1 = whole world fills the width; no zooming out past that
+  .scaleExtent([1,120])                           // k=1 = whole world fills the width; deep zoom for street-level detail
   .constrain(t => d3.zoomIdentity.translate(t.x, clampY(t)).scale(t.k))
   .on("zoom", ev => {
     const t = ev.transform, k = t.k;
@@ -674,7 +674,9 @@ window.addEventListener("resize",()=>{
 });
 
 // ── LOAD WORLD MAP ────────────────────────────────────────────────────────────
-fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+// Higher-resolution (50m) coastlines/borders so deep zoom stays crisp. Borders
+// use non-scaling strokes (see CSS) so the lines stay thin as you zoom in.
+fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json")
   .then(r=>r.json())
   .then(world=>{
     document.getElementById("loading").style.display="none";

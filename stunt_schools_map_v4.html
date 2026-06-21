@@ -288,7 +288,7 @@ const zoom = d3.zoom()
     let wx = t.x % worldW; if(wx > 0) wx -= worldW;   // wrap pan into (-worldW, 0]
     g.attr("transform", `translate(${wx},${t.y}) scale(${k})`);
     dotGroup.selectAll(".school-dot-g").each(function(d) {
-      if(visibleSchools.has(d)) d3.select(this).attr("transform", `translate(${cx(d)},${cy(d)}) scale(${1/Math.sqrt(k)})`);
+      if(visibleSchools.has(d)) d3.select(this).attr("transform", `translate(${cx(d)},${cy(d)}) scale(${1/k})`);
     });
   });
 svg.call(zoom);
@@ -376,7 +376,7 @@ function renderDots() {
     layer.selectAll(".school-dot-g")
       .data(SCHOOLS).enter().append("g")
       .attr("class","school-dot-g")
-      .attr("transform", d=>`translate(${cx(d)},${cy(d)}) scale(${1/Math.sqrt(k)})`)
+      .attr("transform", d=>`translate(${cx(d)},${cy(d)}) scale(${1/k})`)
       .style("cursor","pointer")
       .each(function(d){ drawPieDot(d3.select(this), d, null); })
       .on("click",(ev,d)=>{ev.stopPropagation();track("click",d.name);showPopup(d,ev);})
@@ -587,7 +587,7 @@ window.addEventListener("resize",()=>{
   // Re-apply the current zoom transform so x-wrap / y-clamp recompute for the new size
   svg.call(zoom.transform, d3.zoomTransform(svg.node()));
   const k=d3.zoomTransform(svg.node()).k;
-  dotGroup.selectAll(".school-dot-g").attr("transform",d=>`translate(${cx(d)},${cy(d)}) scale(${1/Math.sqrt(k)})`);
+  dotGroup.selectAll(".school-dot-g").attr("transform",d=>`translate(${cx(d)},${cy(d)}) scale(${1/k})`);
 });
 
 // ── LOAD WORLD MAP ────────────────────────────────────────────────────────────

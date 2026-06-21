@@ -299,7 +299,7 @@ function clampY(t){
 }
 
 const zoom = d3.zoom()
-  .scaleExtent([1,120])                           // k=1 = whole world fills the width; deep zoom for street-level detail
+  .scaleExtent([1,600])                           // k=1 = whole world fills the width; deep zoom to separate dense city clusters
   .constrain(t => d3.zoomIdentity.translate(t.x, clampY(t)).scale(t.k))
   .on("zoom", ev => {
     const t = ev.transform, k = t.k;

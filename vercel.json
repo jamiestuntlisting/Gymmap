@@ -1,5 +1,7 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/stunt_schools_map_v4.html" }
+    { "source": "/", "destination": "/stunt_schools_map_v4.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/analytics", "destination": "/analytics.html" }
   ]
 }

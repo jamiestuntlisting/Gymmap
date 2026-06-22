@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>StuntListing — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Inter",sans-serif;background:#080808;color:#f0f0f0;min-height:100vh;min-height:100dvh;-webkit-text-size-adjust:100%;}
+header{background:#080808;border-bottom:2px solid #cc0000;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:50;}
+.logo{font-family:"Bebas Neue",sans-serif;font-size:26px;letter-spacing:2px;line-height:1;}
+.logo .stunt{color:#fff;}.logo .listing{color:#cc0000;}
+.logo .sub{display:block;color:#666;font-size:11px;font-weight:500;letter-spacing:1.5px;margin-top:2px;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+button,.btn{font-family:"Inter",sans-serif;cursor:pointer;border-radius:3px;border:1px solid #252525;background:#111;color:#ccc;font-size:12px;padding:7px 12px;transition:border-color .2s,color .2s,background .2s;}
+button:hover,.btn:hover{border-color:#cc0000;color:#fff;}
+button.primary{background:#cc0000;border-color:#cc0000;color:#fff;font-weight:600;}
+button.primary:hover{background:#e11414;}
+button.ok{background:#1c3b1c;border-color:#2e6b2e;color:#cdf5cd;}
+button.ok:hover{background:#235023;color:#fff;}
+button.danger{background:#3a1414;border-color:#6b2e2e;color:#f5cdcd;}
+button.danger:hover{background:#511d1d;color:#fff;}
+main{padding:18px;max-width:1200px;margin:0 auto;}
+input,select,textarea{font-family:"Inter",sans-serif;background:#111;border:1px solid #252525;border-radius:3px;color:#eee;font-size:13px;padding:8px 10px;width:100%;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:#cc0000;}
+label.fld{display:block;margin-bottom:10px;}
+label.fld > span{display:block;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+
+/* Login */
+#login{max-width:340px;margin:14vh auto;text-align:center;}
+#login h1{font-family:"Bebas Neue",sans-serif;font-size:30px;letter-spacing:2px;margin-bottom:6px;}
+#login p{color:#777;font-size:13px;margin-bottom:18px;}
+#login input{margin-bottom:10px;text-align:center;}
+#login .err{color:#cc4444;font-size:12px;min-height:16px;margin-top:8px;}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+.tab{padding:8px 16px;border:1px solid #1f1f1f;border-radius:4px;background:#0c0c0c;color:#aaa;font-size:13px;font-weight:500;cursor:pointer;}
+.tab.active{background:#cc0000;border-color:#cc0000;color:#fff;}
+.tab .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:6px;border-radius:9px;background:#cc0000;color:#fff;font-size:11px;line-height:18px;text-align:center;}
+.tab.active .badge{background:#fff;color:#cc0000;}
+
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* Cards (submissions / claims) */
+.card{background:#0c0c0c;border:1px solid #1a1a1a;border-radius:6px;padding:14px 16px;margin-bottom:12px;}
+.card.pending{border-left:3px solid #f5a623;}
+.card.approved{border-left:3px solid #2e6b2e;opacity:.6;}
+.card.rejected{border-left:3px solid #6b2e2e;opacity:.5;}
+.card h3{font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:.5px;color:#fff;margin-bottom:2px;}
+.card .meta{font-size:11px;color:#777;margin-bottom:8px;}
+.card .row{font-size:13px;color:#ccc;margin:3px 0;}
+.card .row b{color:#888;font-weight:500;}
+.card .tags{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0;}
+.tag{font-size:10px;color:#bbb;background:#161616;border:1px solid #2a2a2a;border-radius:3px;padding:2px 6px;}
+.card .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.statuspill{font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:9px;}
+.statuspill.pending{background:#3a2e10;color:#f5c265;}
+.statuspill.approved{background:#163016;color:#8fdf8f;}
+.statuspill.rejected{background:#301616;color:#df8f8f;}
+.mine{display:inline-block;font-size:10px;background:#2a1a3a;color:#c792ea;border:1px solid #4a2a6a;border-radius:9px;padding:2px 8px;text-transform:uppercase;letter-spacing:1px;}
+
+/* Schools table */
+.toolbar{display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap;}
+.toolbar input{max-width:280px;}
+table{width:100%;border-collapse:collapse;}
+th,td{text-align:left;padding:8px 8px;font-size:13px;border-bottom:1px solid #141414;vertical-align:top;}
+th{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px;cursor:default;}
+td.name{font-weight:600;color:#fff;}
+td.tcats{color:#999;font-size:11px;}
+.hidden-row{opacity:.45;}
+.muted{color:#666;font-size:13px;padding:24px 0;text-align:center;}
+
+/* Modal */
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;z-index:100;overflow-y:auto;padding:24px 12px;}
+#overlay.active{display:block;}
+#modal{max-width:640px;margin:0 auto;background:#0c0c0c;border:1px solid #2a2a2a;border-top:3px solid #cc0000;border-radius:6px;padding:20px;}
+#modal h2{font-family:"Bebas Neue",sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+.checkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 10px;max-height:200px;overflow-y:auto;border:1px solid #1f1f1f;border-radius:4px;padding:8px;background:#0a0a0a;}
+.checkgrid.specs{max-height:240px;}
+.chk{display:flex;align-items:center;gap:6px;font-size:12px;color:#cfcfcf;cursor:pointer;}
+.chk input{width:auto;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+.modal-actions .left{margin-right:auto;}
+#status{font-size:12px;color:#777;padding:30px 0;text-align:center;}
+.note{font-size:11px;color:#666;margin-top:4px;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>STUNT<span style="color:#cc0000">LISTING</span> ADMIN</h1>
+  <p>Enter the admin password to manage schools, submissions &amp; claims.</p>
+  <input type="password" id="pw-input" placeholder="Admin password" autocomplete="current-password">
+  <button class="primary" id="pw-go" style="width:100%">Sign in</button>
+  <div class="err" id="pw-err"></div>
+</div>
+
+<div id="app" style="display:none">
+<header>
+  <div class="logo">
+    <div><span class="stunt">STUNT</span><span class="listing">LISTING</span></div>
+    <span class="sub">Admin Console &middot; private</span>
+  </div>
+  <div class="header-right">
+    <a class="btn" href="/" target="_blank" rel="noopener">↗ View map</a>
+    <button id="refresh">↻ Refresh</button>
+    <button id="logout">Sign out</button>
+  </div>
+</header>
+<main>
+  <div class="tabs">
+    <div class="tab active" data-tab="submissions">Submissions <span class="badge" id="b-sub">0</span></div>
+    <div class="tab" data-tab="claims">Claims <span class="badge" id="b-claim">0</span></div>
+    <div class="tab" data-tab="schools">Schools <span class="badge" id="b-school">0</span></div>
+  </div>
+
+  <div id="status">Loading…</div>
+
+  <div class="panel" id="panel-submissions"></div>
+  <div class="panel" id="panel-claims"></div>
+  <div class="panel" id="panel-schools">
+    <div class="toolbar">
+      <input type="text" id="school-search" placeholder="Search schools…">
+      <button class="primary" id="add-school">+ Add school</button>
+      <span class="note" id="school-count"></span>
+    </div>
+    <table>
+      <thead><tr><th>Name</th><th>Type / Categories</th><th>Location</th><th>Status</th><th></th></tr></thead>
+      <tbody id="schools-body"></tbody>
+    </table>
+  </div>
+</main>
+</div>
+
+<!-- Edit / review modal -->
+<div id="overlay">
+  <div id="modal">
+    <h2 id="modal-title">Edit school</h2>
+    <div id="modal-submitter" class="note" style="margin-bottom:12px"></div>
+    <input type="hidden" id="f-id">
+    <input type="hidden" id="f-submission-id">
+    <div class="grid2">
+      <label class="fld"><span>School name</span><input id="f-name"></label>
+      <label class="fld"><span>Type (free text label)</span><input id="f-type" placeholder="e.g. Stunt Gym, Firearms…"></label>
+      <label class="fld"><span>Location (city, state/country)</span><input id="f-location"></label>
+      <label class="fld"><span>Region</span>
+        <select id="f-region">
+          <option value="">—</option>
+          <option>USA — West</option><option>USA — South</option><option>USA — Midwest</option><option>USA — Northeast</option>
+          <option>Canada</option><option>Europe</option><option>Asia-Pacific</option><option>Online</option>
+        </select>
+      </label>
+    </div>
+    <label class="fld"><span>Address</span><input id="f-address" placeholder="Full street address (optional)"></label>
+    <div class="grid2">
+      <label class="fld"><span>Website</span><input id="f-website"></label>
+      <label class="fld"><span>Instagram (@handle)</span><input id="f-instagram"></label>
+      <label class="fld"><span>Latitude</span><input id="f-lat" inputmode="decimal"></label>
+      <label class="fld"><span>Longitude</span><input id="f-lon" inputmode="decimal"></label>
+    </div>
+    <div class="grid2">
+      <label class="fld"><span>Online-only?</span>
+        <select id="f-online"><option value="false">No — has a physical location</option><option value="true">Yes — online / virtual (Pacific hub)</option></select>
+      </label>
+      <label class="fld"><span>Visibility</span>
+        <select id="f-status"><option value="published">Published (visible on map)</option><option value="hidden">Hidden</option></select>
+      </label>
+    </div>
+    <label class="fld"><span>School type / categories (colors &amp; legend)</span></label>
+    <div class="checkgrid" id="f-categories"></div>
+    <label class="fld" style="margin-top:12px"><span>What they train (specialties)</span></label>
+    <div class="checkgrid specs" id="f-specialties"></div>
+    <label class="fld" style="margin-top:12px"><span>Admin notes</span><textarea id="f-notes" rows="2"></textarea></label>
+    <div class="modal-actions">
+      <button class="danger left" id="m-delete" style="display:none">Delete</button>
+      <button id="m-cancel">Cancel</button>
+      <button class="primary" id="m-save">Save</button>
+    </div>
+    <div class="err" id="m-err" style="color:#cc4444;font-size:12px;text-align:right;margin-top:8px"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://opxmtaddfbhzropybqoo.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9weG10YWRkZmJoenJvcHlicW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODE4NzEsImV4cCI6MjA5NzU1Nzg3MX0.WfYZp1kHT17hYjBUNtrF4_hpQbua73xDIFVV3ijANx0";
+
+const CATEGORIES = ["Fight Choreography","Wirework & Aerial","Driving & Motorsports","Firearms & Tactical","Martial Arts","Parkour","Weapons & Swords","Fire Burns & Pyrotechnics","Screen / Stage Combat","Motion Capture & Previs","Stunt School","Stunt Gym","Horse Stunts","Rescue Training","Kids Programs","Edited Demo Reel","General"];
+const SPECIALTIES = ["Aerial","Aerial (Lyra)","Aerial (Silks)","Aerial (Straps)","Air Ram","Balintawak","Boxing","Brazilian Jiu-Jitsu","Business Dynamics","Capoeira","Car Hits","Creature Performance","Drifting","Edited Demo Reel","Fight Choreography","Filipino Martial Arts","Fire Burns","Firearms","Gunshot Reactions","High Falls","Horse Stunts","Karate","Kickboxing","Kids","Krav Maga","Kung Fu","MMA","Martial Arts","Mini Tramp","Motion Capture","Motocross","Muay Thai","Open Gym","Parkour","Previs","Private Training","Pyrotechnics","Rally","Rappelling","Rescue Training","Screen Combat","Stage Combat","Stair Falls","Stunt Driving","Swords","Tactical Movement","Taekwondo","Tumbling","Weapons","Window Penetrations","Wirework","Wrestling"];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let PW = sessionStorage.getItem("sl_admin_pw") || "";
+let DATA = {schools:[],submissions:[],claims:[]};
+let currentTab = "submissions";
+
+async function rpc(fn, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method:"POST",
+    headers:{ "apikey":SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY, "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    let msg = "HTTP "+res.status;
+    try{ const j = await res.json(); if(j.message) msg = j.message; }catch(e){}
+    throw new Error(msg);
+  }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+// ── LOGIN ──────────────────────────────────────────────────────────────────
+async function tryLogin(pw){
+  $("pw-err").textContent = "";
+  try{
+    const d = await rpc("admin_data", {p_password: pw});
+    PW = pw; sessionStorage.setItem("sl_admin_pw", pw);
+    DATA = d; showApp(); renderAll();
+  }catch(e){
+    $("pw-err").textContent = /unauthor/i.test(e.message) ? "Wrong password." : e.message;
+  }
+}
+function showApp(){ $("login").style.display="none"; $("app").style.display="block"; }
+function showLogin(){ $("app").style.display="none"; $("login").style.display="block"; $("pw-input").value=""; $("pw-input").focus(); }
+
+$("pw-go").addEventListener("click",()=>tryLogin($("pw-input").value));
+$("pw-input").addEventListener("keydown",e=>{ if(e.key==="Enter") tryLogin($("pw-input").value); });
+$("logout").addEventListener("click",()=>{ PW=""; sessionStorage.removeItem("sl_admin_pw"); showLogin(); });
+$("refresh").addEventListener("click", reload);
+
+async function reload(){
+  $("status").style.display="block"; $("status").textContent="Loading…";
+  try{ DATA = await rpc("admin_data",{p_password:PW}); renderAll(); }
+  catch(e){ if(/unauthor/i.test(e.message)){ showLogin(); } else { $("status").textContent="Error: "+e.message; } }
+}
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  currentTab = t.dataset.tab;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===t));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id==="panel-"+currentTab));
+}));
+
+function renderAll(){
+  $("status").style.display="none";
+  const subPending = DATA.submissions.filter(s=>s.status==="pending").length;
+  const claimPending = DATA.claims.filter(c=>c.status==="pending").length;
+  $("b-sub").textContent = subPending;
+  $("b-claim").textContent = claimPending;
+  $("b-school").textContent = DATA.schools.length;
+  renderSubmissions(); renderClaims(); renderSchools();
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id==="panel-"+currentTab));
+}
+
+// ── SUBMISSIONS ────────────────────────────────────────────────────────────
+function renderSubmissions(){
+  const el = $("panel-submissions");
+  const subs = [...DATA.submissions].sort((a,b)=> (a.status==="pending"?0:1)-(b.status==="pending"?0:1) || new Date(b.created_at)-new Date(a.created_at));
+  if(!subs.length){ el.innerHTML = '<div class="muted">No school submissions yet.</div>'; return; }
+  el.innerHTML = subs.map(s=>{
+    const cats=(s.categories||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join("");
+    const specs=(s.specialties||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join("");
+    return `<div class="card ${s.status}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <h3>${esc(s.name)||"(no name)"}</h3>
+        <span class="statuspill ${s.status}">${s.status}</span>
+        ${s.is_my_school?'<span class="mine">claims ownership</span>':''}
+        ${s.online?'<span class="tag">Online</span>':''}
+      </div>
+      <div class="meta">Submitted ${new Date(s.created_at).toLocaleString()} ${s.submitter_name?("· by "+esc(s.submitter_name)):""} ${s.submitter_email?("· "+esc(s.submitter_email)):""}</div>
+      ${s.type?`<div class="row"><b>Type:</b> ${esc(s.type)}</div>`:""}
+      ${s.location?`<div class="row"><b>Location:</b> ${esc(s.location)}</div>`:""}
+      ${s.address?`<div class="row"><b>Address:</b> ${esc(s.address)}</div>`:""}
+      ${s.website?`<div class="row"><b>Website:</b> <a href="${esc(s.website)}" target="_blank" rel="noopener" style="color:#6ab0f5">${esc(s.website)}</a></div>`:""}
+      ${s.instagram?`<div class="row"><b>Instagram:</b> ${esc(s.instagram)}</div>`:""}
+      ${cats?`<div class="tags">${cats}</div>`:""}
+      ${specs?`<div class="tags">${specs}</div>`:""}
+      ${s.notes?`<div class="row"><b>Notes:</b> ${esc(s.notes)}</div>`:""}
+      <div class="actions">
+        ${s.status==="pending"?`<button class="ok" data-approve="${s.id}">Review &amp; publish →</button>
+           <button class="danger" data-reject="${s.id}">Reject</button>`:
+          `<button data-reopen="${s.id}">Mark pending</button>`}
+      </div>
+    </div>`;
+  }).join("");
+  el.querySelectorAll("[data-approve]").forEach(b=>b.addEventListener("click",()=>openSubmission(b.dataset.approve)));
+  el.querySelectorAll("[data-reject]").forEach(b=>b.addEventListener("click",()=>setSubmission(b.dataset.reject,"rejected")));
+  el.querySelectorAll("[data-reopen]").forEach(b=>b.addEventListener("click",()=>setSubmission(b.dataset.reopen,"pending")));
+}
+async function setSubmission(id,status){
+  try{ await rpc("admin_set_submission",{p_password:PW,p_id:id,p_status:status}); await reload(); }
+  catch(e){ alert("Error: "+e.message); }
+}
+
+// ── CLAIMS ─────────────────────────────────────────────────────────────────
+function renderClaims(){
+  const el = $("panel-claims");
+  const claims = [...DATA.claims].sort((a,b)=> (a.status==="pending"?0:1)-(b.status==="pending"?0:1) || new Date(b.created_at)-new Date(a.created_at));
+  if(!claims.length){ el.innerHTML = '<div class="muted">No ownership claims yet.</div>'; return; }
+  el.innerHTML = claims.map(c=>`<div class="card ${c.status}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <h3>${esc(c.school_name)||"(school)"}</h3>
+        <span class="statuspill ${c.status}">${c.status}</span>
+        <span class="mine">ownership claim</span>
+      </div>
+      <div class="meta">${new Date(c.created_at).toLocaleString()}</div>
+      <div class="row"><b>Claimant:</b> ${esc(c.claimant_name)||"—"}</div>
+      <div class="row"><b>Email:</b> ${esc(c.claimant_email)||"—"}</div>
+      <div class="row"><b>Phone:</b> ${esc(c.claimant_phone)||"—"}</div>
+      ${c.message?`<div class="row"><b>Message:</b> ${esc(c.message)}</div>`:""}
+      <div class="actions">
+        ${c.status==="pending"?`<button class="ok" data-capp="${c.id}">Approve</button><button class="danger" data-crej="${c.id}">Reject</button>`:
+          `<button data-creopen="${c.id}">Mark pending</button>`}
+      </div>
+    </div>`).join("");
+  el.querySelectorAll("[data-capp]").forEach(b=>b.addEventListener("click",()=>setClaim(b.dataset.capp,"approved")));
+  el.querySelectorAll("[data-crej]").forEach(b=>b.addEventListener("click",()=>setClaim(b.dataset.crej,"rejected")));
+  el.querySelectorAll("[data-creopen]").forEach(b=>b.addEventListener("click",()=>setClaim(b.dataset.creopen,"pending")));
+}
+async function setClaim(id,status){
+  try{ await rpc("admin_set_claim",{p_password:PW,p_id:id,p_status:status}); await reload(); }
+  catch(e){ alert("Error: "+e.message); }
+}
+
+// ── SCHOOLS ────────────────────────────────────────────────────────────────
+function renderSchools(){
+  const q = ($("school-search").value||"").toLowerCase();
+  const rows = DATA.schools
+    .filter(s=> !q || (s.name||"").toLowerCase().includes(q) || (s.location||"").toLowerCase().includes(q) || (s.type||"").toLowerCase().includes(q))
+    .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  $("school-count").textContent = rows.length+" of "+DATA.schools.length+" schools";
+  $("schools-body").innerHTML = rows.map(s=>`<tr class="${s.status==='hidden'?'hidden-row':''}">
+      <td class="name">${esc(s.name)}</td>
+      <td class="tcats">${esc(s.type||"")}${(s.categories&&s.categories.length)?`<br>${esc(s.categories.join(", "))}`:""}</td>
+      <td>${esc(s.online?"Online":(s.location||""))}</td>
+      <td>${s.status==="hidden"?'<span class="statuspill rejected">hidden</span>':'<span class="statuspill approved">live</span>'}</td>
+      <td><button data-edit="${s.id}">Edit</button></td>
+    </tr>`).join("") || '<tr><td colspan="5" class="muted">No schools match.</td></tr>';
+  $("schools-body").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openSchool(b.dataset.edit)));
+}
+$("school-search").addEventListener("input",renderSchools);
+$("add-school").addEventListener("click",()=>openSchool(null));
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function buildChecks(){
+  $("f-categories").innerHTML = CATEGORIES.map(c=>`<label class="chk"><input type="checkbox" value="${esc(c)}">${esc(c)}</label>`).join("");
+  $("f-specialties").innerHTML = SPECIALTIES.map(c=>`<label class="chk"><input type="checkbox" value="${esc(c)}">${esc(c)}</label>`).join("");
+}
+buildChecks();
+function setChecks(containerId, values){
+  const set = new Set(values||[]);
+  document.querySelectorAll(`#${containerId} input`).forEach(i=>i.checked=set.has(i.value));
+}
+function getChecks(containerId){
+  return [...document.querySelectorAll(`#${containerId} input:checked`)].map(i=>i.value);
+}
+function fillForm(s){
+  $("f-id").value = s.id||"";
+  $("f-submission-id").value = "";
+  $("f-name").value=s.name||""; $("f-type").value=s.type||""; $("f-location").value=s.location||"";
+  $("f-region").value=s.region||""; $("f-address").value=s.address||""; $("f-website").value=s.website||"";
+  $("f-instagram").value=s.instagram||""; $("f-lat").value=(s.lat==null?"":s.lat); $("f-lon").value=(s.lon==null?"":s.lon);
+  $("f-online").value=String(!!s.online); $("f-status").value=s.status||"published"; $("f-notes").value=s.notes||"";
+  setChecks("f-categories", s.categories); setChecks("f-specialties", s.specialties);
+  $("m-err").textContent="";
+}
+function openSchool(id){
+  const s = id ? DATA.schools.find(x=>x.id===id) : {status:"published",categories:[],specialties:[]};
+  $("modal-title").textContent = id ? "Edit school" : "Add school";
+  $("modal-submitter").textContent = "";
+  $("m-delete").style.display = id ? "" : "none";
+  $("m-delete").dataset.id = id||"";
+  fillForm(s||{});
+  openOverlay();
+}
+function openSubmission(id){
+  const s = DATA.submissions.find(x=>x.id===id); if(!s) return;
+  $("modal-title").textContent = "Review submission → publish";
+  $("modal-submitter").textContent = (s.submitter_name||s.submitter_email)
+    ? `Submitted by ${s.submitter_name||"?"}${s.submitter_email?(" · "+s.submitter_email):""}${s.is_my_school?" · claims ownership":""}`
+    : (s.is_my_school?"Submitter claims ownership":"");
+  $("m-delete").style.display="none";
+  // Prefill from submission; lat/lon/region left for admin to set (online → hub auto-fills)
+  fillForm({
+    id:"", name:s.name, type:s.type, location:s.location, region:s.online?"Online":"", address:s.address,
+    website:s.website, instagram:s.instagram, lat:s.online?5:"", lon:s.online?-152:"", online:s.online,
+    status:"published", categories:s.categories, specialties:s.specialties, notes:s.notes
+  });
+  $("f-submission-id").value = id;
+  openOverlay();
+}
+function openOverlay(){ $("overlay").classList.add("active"); }
+function closeOverlay(){ $("overlay").classList.remove("active"); }
+$("m-cancel").addEventListener("click",closeOverlay);
+$("overlay").addEventListener("click",e=>{ if(e.target===$("overlay")) closeOverlay(); });
+
+function readForm(){
+  const lat=$("f-lat").value.trim(), lon=$("f-lon").value.trim();
+  return {
+    name:$("f-name").value.trim(), type:$("f-type").value.trim(), location:$("f-location").value.trim(),
+    region:$("f-region").value, address:$("f-address").value.trim(), website:$("f-website").value.trim(),
+    instagram:$("f-instagram").value.trim(), lat:lat, lon:lon, online:$("f-online").value==="true",
+    status:$("f-status").value, categories:getChecks("f-categories"), specialties:getChecks("f-specialties"),
+    notes:$("f-notes").value.trim()
+  };
+}
+$("m-save").addEventListener("click",async()=>{
+  $("m-err").textContent="";
+  const data = readForm();
+  if(!data.name){ $("m-err").textContent="Name is required."; return; }
+  const subId = $("f-submission-id").value;
+  const id = $("f-id").value;
+  try{
+    if(subId){
+      await rpc("admin_approve_submission",{p_password:PW,p_id:subId,p_school:data});
+    } else {
+      if(id) data.id = id;
+      await rpc("admin_save_school",{p_password:PW,p_school:data});
+    }
+    closeOverlay(); await reload();
+  }catch(e){ $("m-err").textContent="Error: "+e.message; }
+});
+$("m-delete").addEventListener("click",async()=>{
+  const id = $("m-delete").dataset.id; if(!id) return;
+  if(!confirm("Delete this school permanently? This removes it from the live map.")) return;
+  try{ await rpc("admin_delete_school",{p_password:PW,p_id:id}); closeOverlay(); await reload(); }
+  catch(e){ $("m-err").textContent="Error: "+e.message; }
+});
+
+// ── BOOT ───────────────────────────────────────────────────────────────────
+if(PW){ tryLogin(PW); } else { $("pw-input").focus(); }
+</script>
+</body>
+</html>

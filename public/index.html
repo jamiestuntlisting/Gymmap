@@ -274,20 +274,17 @@ select option{background:#111;color:#ccc;}
 
 <script>
 // ── ANALYTICS (privacy-light: anonymous counts only, no IPs / personal data) ──
-const SUPABASE_URL = "https://opxmtaddfbhzropybqoo.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9weG10YWRkZmJoenJvcHlicW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODE4NzEsImV4cCI6MjA5NzU1Nzg3MX0.WfYZp1kHT17hYjBUNtrF4_hpQbua73xDIFVV3ijANx0";
-const ANALYTICS_ON = SUPABASE_URL.indexOf("http") === 0;   // stays off until keys are injected
+// Events go to our own Cloudflare Worker (/api/track) backed by D1.
 let _sessionId;
 try {
   _sessionId = localStorage.getItem("sl_sid");
   if(!_sessionId){ _sessionId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(36).slice(2)); localStorage.setItem("sl_sid", _sessionId); }
 } catch(e){ _sessionId = "anon"; }
 function track(type, school){
-  if(!ANALYTICS_ON) return;
   try{
-    fetch(`${SUPABASE_URL}/rest/v1/analytics_events`, {
+    fetch("/api/track", {
       method:"POST",
-      headers:{ "apikey":SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY, "Content-Type":"application/json", "Prefer":"return=minimal" },
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ type:type, school: school||null, session_id:_sessionId }),
       keepalive:true
     }).catch(()=>{});
@@ -864,12 +861,12 @@ function showSubmitForm(){
 }
 
 async function postRow(table, row){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+  const res = await fetch(`/api/${table}`, {
     method:"POST",
-    headers:{ "apikey":SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY, "Content-Type":"application/json", "Prefer":"return=minimal" },
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify(row)
   });
-  if(!res.ok){ let m="HTTP "+res.status; try{const j=await res.json(); if(j.message)m=j.message;}catch(e){} throw new Error(m); }
+  if(!res.ok){ let m="HTTP "+res.status; try{const j=await res.json(); if(j.error)m=j.error;}catch(e){} throw new Error(m); }
 }
 
 document.getElementById("pc-more").addEventListener("click",e=>{ e.preventDefault(); if(popupSchool) showDetail(popupSchool); });
@@ -878,8 +875,9 @@ document.getElementById("add-school-btn").addEventListener("click",showSubmitFor
 // ── LOAD WORLD MAP ────────────────────────────────────────────────────────────
 // Higher-resolution (50m) coastlines/borders so deep zoom stays crisp. Borders
 // use non-scaling strokes (see CSS) so the lines stay thin as you zoom in.
-// Pull the live school list from Supabase; if it's unreachable or empty we fall
-// back to the snapshot embedded above so the map always renders something.
+// Pull the live school list from our API (Cloudflare Worker + D1); if it's
+// unreachable or empty we fall back to the snapshot embedded above so the map
+// always renders something.
 function normalizeSchool(r){ return {
   id:r.id, name:r.name, type:r.type||"", categories:r.categories||[], specialties:r.specialties||[],
   location:r.location||"", region:r.region||"", address:r.address||"", website:r.website||"",
@@ -887,9 +885,7 @@ function normalizeSchool(r){ return {
 }; }
 async function loadSchools(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/schools?select=*&status=eq.published`, {
-      headers:{ "apikey":SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY }
-    });
+    const res = await fetch("/api/schools");
     if(res.ok){ const rows = await res.json(); if(Array.isArray(rows) && rows.length){ SCHOOLS = rows.map(normalizeSchool); } }
   }catch(e){ /* keep embedded fallback */ }
 }

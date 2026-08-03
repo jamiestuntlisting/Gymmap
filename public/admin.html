@@ -186,9 +186,6 @@ td.tcats{color:#999;font-size:11px;}
 </div>
 
 <script>
-const SUPABASE_URL = "https://opxmtaddfbhzropybqoo.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9weG10YWRkZmJoenJvcHlicW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODE4NzEsImV4cCI6MjA5NzU1Nzg3MX0.WfYZp1kHT17hYjBUNtrF4_hpQbua73xDIFVV3ijANx0";
-
 const CATEGORIES = ["Fight Choreography","Wirework & Aerial","Driving & Motorsports","Firearms & Tactical","Martial Arts","Parkour","Weapons & Swords","Fire Burns & Pyrotechnics","Screen / Stage Combat","Motion Capture & Previs","Stunt School","Stunt Gym","Horse Stunts","Rescue Training","Kids Programs","Edited Demo Reel","General"];
 const SPECIALTIES = ["Aerial","Aerial (Lyra)","Aerial (Silks)","Aerial (Straps)","Air Ram","Balintawak","Boxing","Brazilian Jiu-Jitsu","Business Dynamics","Capoeira","Car Hits","Creature Performance","Drifting","Edited Demo Reel","Fight Choreography","Filipino Martial Arts","Fire Burns","Firearms","Gunshot Reactions","High Falls","Horse Stunts","Karate","Kickboxing","Kids","Krav Maga","Kung Fu","MMA","Martial Arts","Mini Tramp","Motion Capture","Motocross","Muay Thai","Open Gym","Parkour","Previs","Private Training","Pyrotechnics","Rally","Rappelling","Rescue Training","Screen Combat","Stage Combat","Stair Falls","Stunt Driving","Swords","Tactical Movement","Taekwondo","Tumbling","Weapons","Window Penetrations","Wirework","Wrestling"];
 
@@ -198,15 +195,17 @@ let PW = sessionStorage.getItem("sl_admin_pw") || "";
 let DATA = {schools:[],submissions:[],claims:[]};
 let currentTab = "submissions";
 
-async function rpc(fn, body){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+// All admin calls go through our Cloudflare Worker (/api/admin/*), which
+// verifies the password server-side against the hash stored in D1.
+async function rpc(action, body){
+  const res = await fetch(`/api/admin/${action}`, {
     method:"POST",
-    headers:{ "apikey":SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY, "Content-Type":"application/json" },
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify(body)
   });
   if(!res.ok){
     let msg = "HTTP "+res.status;
-    try{ const j = await res.json(); if(j.message) msg = j.message; }catch(e){}
+    try{ const j = await res.json(); if(j.error) msg = j.error; }catch(e){}
     throw new Error(msg);
   }
   const txt = await res.text();
@@ -217,7 +216,7 @@ async function rpc(fn, body){
 async function tryLogin(pw){
   $("pw-err").textContent = "";
   try{
-    const d = await rpc("admin_data", {p_password: pw});
+    const d = await rpc("data", {password: pw});
     PW = pw; sessionStorage.setItem("sl_admin_pw", pw);
     DATA = d; showApp(); renderAll();
   }catch(e){
@@ -234,7 +233,7 @@ $("refresh").addEventListener("click", reload);
 
 async function reload(){
   $("status").style.display="block"; $("status").textContent="Loading…";
-  try{ DATA = await rpc("admin_data",{p_password:PW}); renderAll(); }
+  try{ DATA = await rpc("data",{password:PW}); renderAll(); }
   catch(e){ if(/unauthor/i.test(e.message)){ showLogin(); } else { $("status").textContent="Error: "+e.message; } }
 }
 
@@ -292,7 +291,7 @@ function renderSubmissions(){
   el.querySelectorAll("[data-reopen]").forEach(b=>b.addEventListener("click",()=>setSubmission(b.dataset.reopen,"pending")));
 }
 async function setSubmission(id,status){
-  try{ await rpc("admin_set_submission",{p_password:PW,p_id:id,p_status:status}); await reload(); }
+  try{ await rpc("set-submission",{password:PW,id:id,status:status}); await reload(); }
   catch(e){ alert("Error: "+e.message); }
 }
 
@@ -322,7 +321,7 @@ function renderClaims(){
   el.querySelectorAll("[data-creopen]").forEach(b=>b.addEventListener("click",()=>setClaim(b.dataset.creopen,"pending")));
 }
 async function setClaim(id,status){
-  try{ await rpc("admin_set_claim",{p_password:PW,p_id:id,p_status:status}); await reload(); }
+  try{ await rpc("set-claim",{password:PW,id:id,status:status}); await reload(); }
   catch(e){ alert("Error: "+e.message); }
 }
 
@@ -416,10 +415,10 @@ $("m-save").addEventListener("click",async()=>{
   const id = $("f-id").value;
   try{
     if(subId){
-      await rpc("admin_approve_submission",{p_password:PW,p_id:subId,p_school:data});
+      await rpc("approve-submission",{password:PW,id:subId,school:data});
     } else {
       if(id) data.id = id;
-      await rpc("admin_save_school",{p_password:PW,p_school:data});
+      await rpc("save-school",{password:PW,school:data});
     }
     closeOverlay(); await reload();
   }catch(e){ $("m-err").textContent="Error: "+e.message; }
@@ -427,7 +426,7 @@ $("m-save").addEventListener("click",async()=>{
 $("m-delete").addEventListener("click",async()=>{
   const id = $("m-delete").dataset.id; if(!id) return;
   if(!confirm("Delete this school permanently? This removes it from the live map.")) return;
-  try{ await rpc("admin_delete_school",{p_password:PW,p_id:id}); closeOverlay(); await reload(); }
+  try{ await rpc("delete-school",{password:PW,id:id}); closeOverlay(); await reload(); }
   catch(e){ $("m-err").textContent="Error: "+e.message; }
 });
 

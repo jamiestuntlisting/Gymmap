@@ -14,6 +14,24 @@ World map of stunt training schools. Runs entirely on **Cloudflare**:
 | `/admin`     | Password-gated admin console (approve/edit the database)    |
 | `/analytics` | Aggregate view/click counts                                 |
 
+## First-time setup in a new Cloudflare account
+
+If the `gymmap` D1 database doesn't exist in your account yet:
+
+```sh
+git clone https://github.com/jamiestuntlisting/Gymmap.git && cd Gymmap
+npx wrangler login
+npx wrangler d1 create gymmap        # prints a database_id
+# → paste that database_id into wrangler.jsonc (d1_databases[0].database_id)
+npx wrangler d1 execute gymmap --remote --file=migrations/0001_schema.sql
+npx wrangler d1 execute gymmap --remote --file=migrations/0003_seed.sql
+npx wrangler deploy
+```
+
+`0003_seed.sql` contains the complete dataset (158 schools, submissions,
+claims, analytics history, admin password hash) with the 0002 XMA fixes
+already applied, so a fresh database is immediately production-ready.
+
 ## Deploying
 
 The Worker (with its static assets and D1 binding) deploys from `wrangler.jsonc`:

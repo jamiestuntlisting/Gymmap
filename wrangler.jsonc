@@ -13,7 +13,7 @@
     {
       "binding": "DB",
       "database_name": "gymmap",
-      "database_id": "47e6cc96-f549-44e9-b535-fbf1fa1e4817"
+      "database_id": "3f42a52c-26cd-4ed6-8ce7-b3b4cf171640"
     }
   ],
   "observability": { "enabled": true }

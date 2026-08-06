@@ -4,7 +4,7 @@ World map of stunt training schools. Runs entirely on **Cloudflare**:
 
 - **Hosting**: Cloudflare Workers static assets (`public/` — map, admin console, analytics)
 - **API**: Cloudflare Worker (`src/worker.js`) — schools, submissions, claims, analytics, admin
-- **Database**: Cloudflare D1 (`gymmap`, id `47e6cc96-f549-44e9-b535-fbf1fa1e4817`)
+- **Database**: Cloudflare D1 (`gymmap`, id `3f42a52c-26cd-4ed6-8ce7-b3b4cf171640`)
 
 ## Pages
 

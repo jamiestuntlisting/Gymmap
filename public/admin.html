@@ -94,7 +94,7 @@ td.tcats{color:#999;font-size:11px;}
 
 <div id="login">
   <h1>STUNT<span style="color:#cc0000">LISTING</span> ADMIN</h1>
-  <p>Enter the admin password to manage schools, submissions &amp; claims.</p>
+  <p>Enter the admin password to manage facilities, submissions &amp; claims.</p>
   <input type="password" id="pw-input" placeholder="Admin password" autocomplete="current-password">
   <button class="primary" id="pw-go" style="width:100%">Sign in</button>
   <div class="err" id="pw-err"></div>
@@ -116,7 +116,7 @@ td.tcats{color:#999;font-size:11px;}
   <div class="tabs">
     <div class="tab active" data-tab="submissions">Submissions <span class="badge" id="b-sub">0</span></div>
     <div class="tab" data-tab="claims">Claims <span class="badge" id="b-claim">0</span></div>
-    <div class="tab" data-tab="schools">Schools <span class="badge" id="b-school">0</span></div>
+    <div class="tab" data-tab="schools">Facilities <span class="badge" id="b-school">0</span></div>
   </div>
 
   <div id="status">Loading…</div>
@@ -125,8 +125,8 @@ td.tcats{color:#999;font-size:11px;}
   <div class="panel" id="panel-claims"></div>
   <div class="panel" id="panel-schools">
     <div class="toolbar">
-      <input type="text" id="school-search" placeholder="Search schools…">
-      <button class="primary" id="add-school">+ Add school</button>
+      <input type="text" id="school-search" placeholder="Search facilities…">
+      <button class="primary" id="add-school">+ Add facility</button>
       <span class="note" id="school-count"></span>
     </div>
     <table>
@@ -140,19 +140,19 @@ td.tcats{color:#999;font-size:11px;}
 <!-- Edit / review modal -->
 <div id="overlay">
   <div id="modal">
-    <h2 id="modal-title">Edit school</h2>
+    <h2 id="modal-title">Edit facility</h2>
     <div id="modal-submitter" class="note" style="margin-bottom:12px"></div>
     <input type="hidden" id="f-id">
     <input type="hidden" id="f-submission-id">
     <div class="grid2">
-      <label class="fld"><span>School name</span><input id="f-name"></label>
+      <label class="fld"><span>Facility name</span><input id="f-name"></label>
       <label class="fld"><span>Type (free text label)</span><input id="f-type" placeholder="e.g. Stunt Gym, Firearms…"></label>
       <label class="fld"><span>Location (city, state/country)</span><input id="f-location"></label>
       <label class="fld"><span>Region</span>
         <select id="f-region">
           <option value="">—</option>
           <option>USA — West</option><option>USA — South</option><option>USA — Midwest</option><option>USA — Northeast</option>
-          <option>Canada</option><option>Europe</option><option>Asia-Pacific</option><option>Online</option>
+          <option>Canada</option><option>Europe</option><option>Asia-Pacific</option><option>Africa</option><option>South America</option><option>Online</option>
         </select>
       </label>
     </div>
@@ -165,13 +165,13 @@ td.tcats{color:#999;font-size:11px;}
     </div>
     <div class="grid2">
       <label class="fld"><span>Online-only?</span>
-        <select id="f-online"><option value="false">No — has a physical location</option><option value="true">Yes — online / virtual (Pacific hub)</option></select>
+        <select id="f-online"><option value="false">No — has a physical location</option><option value="true">Yes — online / virtual (Atlantic hub)</option></select>
       </label>
       <label class="fld"><span>Visibility</span>
         <select id="f-status"><option value="published">Published (visible on map)</option><option value="hidden">Hidden</option></select>
       </label>
     </div>
-    <label class="fld"><span>School type / categories (colors &amp; legend)</span></label>
+    <label class="fld"><span>Facility type / categories (colors &amp; legend)</span></label>
     <div class="checkgrid" id="f-categories"></div>
     <label class="fld" style="margin-top:12px"><span>What they train (specialties)</span></label>
     <div class="checkgrid specs" id="f-specialties"></div>
@@ -186,8 +186,8 @@ td.tcats{color:#999;font-size:11px;}
 </div>
 
 <script>
-const CATEGORIES = ["Fight Choreography","Wirework & Aerial","Driving & Motorsports","Firearms & Tactical","Martial Arts","Parkour","Weapons & Swords","Fire Burns & Pyrotechnics","Screen / Stage Combat","Motion Capture & Previs","Stunt School","Stunt Gym","Horse Stunts","Rescue Training","Kids Programs","Edited Demo Reel","General"];
-const SPECIALTIES = ["Aerial","Aerial (Lyra)","Aerial (Silks)","Aerial (Straps)","Air Ram","Balintawak","Boxing","Brazilian Jiu-Jitsu","Business Dynamics","Capoeira","Car Hits","Creature Performance","Drifting","Edited Demo Reel","Fight Choreography","Filipino Martial Arts","Fire Burns","Firearms","Gunshot Reactions","High Falls","Horse Stunts","Karate","Kickboxing","Kids","Krav Maga","Kung Fu","MMA","Martial Arts","Mini Tramp","Motion Capture","Motocross","Muay Thai","Open Gym","Parkour","Previs","Private Training","Pyrotechnics","Rally","Rappelling","Rescue Training","Screen Combat","Stage Combat","Stair Falls","Stunt Driving","Swords","Tactical Movement","Taekwondo","Tumbling","Weapons","Window Penetrations","Wirework","Wrestling"];
+const CATEGORIES = ["Stunt School", "Stunt Training Facility", "Open Gym", "Combat", "Wirework, Rigging & Aerial", "Driving & Motorsports", "Firearms & Tactical", "Fire Burns", "Weapons & Swords", "Parkour", "Motion Capture & Previs", "Horse Stunts", "Kids Programs"];
+const SPECIALTIES = ["Aerial", "Aerial (Lyra)", "Aerial (Silks)", "Aerial (Straps)", "Air Ram", "Balintawak", "Boxing", "Brazilian Jiu-Jitsu", "Business Dynamics", "Capoeira", "Car Hits", "Creature Performance", "Drifting", "Fight Choreography", "Filipino Martial Arts", "Fire Burns", "Firearms", "Gunshot Reactions", "High Falls", "Horse Stunts", "Karate", "Kickboxing", "Kids", "Krav Maga", "Kung Fu", "MMA", "Martial Arts", "Mini Tramp", "Motion Capture", "Motocross", "Muay Thai", "Open Gym", "Parkour", "Previs", "Private Training", "Rally", "Rappelling", "Rescue Training", "Rigging", "Screen Combat", "Stage Combat", "Stair Falls", "Stunt Driving", "Swords", "Tactical Movement", "Taekwondo", "Tumbling", "Weapons", "Window Penetrations", "Wirework", "Wrestling"];
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -259,7 +259,7 @@ function renderAll(){
 function renderSubmissions(){
   const el = $("panel-submissions");
   const subs = [...DATA.submissions].sort((a,b)=> (a.status==="pending"?0:1)-(b.status==="pending"?0:1) || new Date(b.created_at)-new Date(a.created_at));
-  if(!subs.length){ el.innerHTML = '<div class="muted">No school submissions yet.</div>'; return; }
+  if(!subs.length){ el.innerHTML = '<div class="muted">No submissions yet.</div>'; return; }
   el.innerHTML = subs.map(s=>{
     const cats=(s.categories||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join("");
     const specs=(s.specialties||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join("");
@@ -331,14 +331,14 @@ function renderSchools(){
   const rows = DATA.schools
     .filter(s=> !q || (s.name||"").toLowerCase().includes(q) || (s.location||"").toLowerCase().includes(q) || (s.type||"").toLowerCase().includes(q))
     .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
-  $("school-count").textContent = rows.length+" of "+DATA.schools.length+" schools";
+  $("school-count").textContent = rows.length+" of "+DATA.schools.length+" facilities";
   $("schools-body").innerHTML = rows.map(s=>`<tr class="${s.status==='hidden'?'hidden-row':''}">
       <td class="name">${esc(s.name)}</td>
       <td class="tcats">${esc(s.type||"")}${(s.categories&&s.categories.length)?`<br>${esc(s.categories.join(", "))}`:""}</td>
       <td>${esc(s.online?"Online":(s.location||""))}</td>
       <td>${s.status==="hidden"?'<span class="statuspill rejected">hidden</span>':'<span class="statuspill approved">live</span>'}</td>
       <td><button data-edit="${s.id}">Edit</button></td>
-    </tr>`).join("") || '<tr><td colspan="5" class="muted">No schools match.</td></tr>';
+    </tr>`).join("") || '<tr><td colspan="5" class="muted">No facilities match.</td></tr>';
   $("schools-body").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openSchool(b.dataset.edit)));
 }
 $("school-search").addEventListener("input",renderSchools);
@@ -369,7 +369,7 @@ function fillForm(s){
 }
 function openSchool(id){
   const s = id ? DATA.schools.find(x=>x.id===id) : {status:"published",categories:[],specialties:[]};
-  $("modal-title").textContent = id ? "Edit school" : "Add school";
+  $("modal-title").textContent = id ? "Edit facility" : "Add facility";
   $("modal-submitter").textContent = "";
   $("m-delete").style.display = id ? "" : "none";
   $("m-delete").dataset.id = id||"";
@@ -386,7 +386,7 @@ function openSubmission(id){
   // Prefill from submission; lat/lon/region left for admin to set (online → hub auto-fills)
   fillForm({
     id:"", name:s.name, type:s.type, location:s.location, region:s.online?"Online":"", address:s.address,
-    website:s.website, instagram:s.instagram, lat:s.online?5:"", lon:s.online?-152:"", online:s.online,
+    website:s.website, instagram:s.instagram, lat:s.online?36:"", lon:s.online?-40:"", online:s.online,
     status:"published", categories:s.categories, specialties:s.specialties, notes:s.notes
   });
   $("f-submission-id").value = id;
@@ -425,7 +425,7 @@ $("m-save").addEventListener("click",async()=>{
 });
 $("m-delete").addEventListener("click",async()=>{
   const id = $("m-delete").dataset.id; if(!id) return;
-  if(!confirm("Delete this school permanently? This removes it from the live map.")) return;
+  if(!confirm("Delete this facility permanently? This removes it from the live map.")) return;
   try{ await rpc("delete-school",{password:PW,id:id}); closeOverlay(); await reload(); }
   catch(e){ $("m-err").textContent="Error: "+e.message; }
 });

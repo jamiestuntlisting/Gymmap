@@ -131,6 +131,8 @@ select option{background:#111;color:#ccc;}
 /* LEGEND */
 #legend{position:absolute;bottom:16px;left:12px;z-index:100;background:rgba(6,6,6,0.93);border:1px solid #1a1a1a;border-radius:4px;padding:10px 12px;width:215px;}
 .legend-title{font-family:"Bebas Neue",sans-serif;font-size:12px;letter-spacing:2px;color:#cc0000;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid #1a1a1a;}
+.leg-sec-title{font-size:9px;color:#777;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin:9px 0 4px;padding-top:8px;border-top:1px solid #1a1a1a;}
+.leg-sec-title.first{margin-top:2px;padding-top:0;border-top:none;}
 .leg-item{display:flex;align-items:center;gap:7px;padding:2px 3px;border-radius:2px;cursor:pointer;transition:background 0.12s;}
 .leg-item:hover{background:rgba(255,255,255,0.04);}
 .leg-item.off{opacity:0.28;}
@@ -298,28 +300,31 @@ let SCHOOLS = window.FALLBACK_SCHOOLS || [];
 
 const ALL_SPECIALTIES = ["Aerial", "Aerial (Lyra)", "Aerial (Silks)", "Aerial (Straps)", "Air Ram", "Balintawak", "Boxing", "Brazilian Jiu-Jitsu", "Business Dynamics", "Capoeira", "Car Hits", "Creature Performance", "Drifting", "Fight Choreography", "Filipino Martial Arts", "Fire Burns", "Firearms", "Gunshot Reactions", "High Falls", "Horse Stunts", "Karate", "Kickboxing", "Krav Maga", "Kung Fu", "MMA", "Martial Arts", "Mini Tramp", "Motion Capture", "Motocross", "Muay Thai", "Open Gym", "Parkour", "Previs", "Private Training", "Rally", "Rappelling", "Rescue Training", "Rigging", "Screen Combat", "Stage Combat", "Stair Falls", "Stunt Driving", "Swords", "Tactical Movement", "Taekwondo", "Tumbling", "Weapons", "Window Penetrations", "Wirework", "Wrestling"];
 
-// Facility types first (what the place IS), then disciplines (what they teach).
+// Facility types (what the place IS) are a separate legend box from the
+// training disciplines (what they teach).
 // "Kids Programs" is intentionally absent — kept in the data but hidden for now.
+const FACILITY_TYPES = ["Stunt School", "Stunt Training Facility", "Open Gym"];
 const COLORS = {
   "Stunt School":               "#5c6bc0",
   "Stunt Training Facility":    "#90a4ae",
   "Open Gym":                   "#7bc67e",
-  "Combat":                     "#e91e8c",
+  "Fight Choreography":         "#e91e8c",
   "Wirework, Rigging & Aerial": "#00d4d4",
   "Driving & Motorsports":      "#f5a623",
   "Firearms & Tactical":        "#d4a017",
   "Fire Burns":                 "#ff6b35",
-  "Weapons & Swords":           "#c792ea",
   "Parkour":                    "#b0f045",
   "Motion Capture & Previs":    "#26c6da",
   "Horse Stunts":               "#a1887f",
 };
 
 // Older records (embedded fallback or a not-yet-migrated database) may still
-// carry the pre-2026-08 category names — normalize them on load so the map is
-// consistent regardless of which data source it got.
+// carry earlier category names — normalize them on load so the map is
+// consistent regardless of which data source it got. "Fight Choreography"
+// covers fighting for film, stage combat, martial arts, and weapons work.
 const CAT_MAP = {
-  "Fight Choreography":"Combat", "Martial Arts":"Combat", "Screen / Stage Combat":"Combat",
+  "Combat":"Fight Choreography", "Martial Arts":"Fight Choreography",
+  "Screen / Stage Combat":"Fight Choreography", "Weapons & Swords":"Fight Choreography",
   "Wirework & Aerial":"Wirework, Rigging & Aerial", "Rescue Training":"Wirework, Rigging & Aerial",
   "Fire Burns & Pyrotechnics":"Fire Burns", "Stunt Gym":"Stunt Training Facility",
   "General":"Stunt School", "Edited Demo Reel":null,
@@ -484,12 +489,12 @@ function positionOnlineHub(){
 }
 function drawOnlineHub(){
   onlineHubG = worldContent.append("g").attr("class","online-hub").style("cursor","pointer");
-  onlineHubG.append("circle").attr("r",13).attr("fill","#08222a").attr("stroke","#26c6da").attr("stroke-width",1.6);
+  onlineHubG.append("circle").attr("r",22).attr("fill","#08222a").attr("stroke","#26c6da").attr("stroke-width",2);
   const gl = onlineHubG.append("g"); // simple globe / internet glyph
-  gl.append("circle").attr("r",7).attr("fill","none").attr("stroke","#26c6da").attr("stroke-width",1.3);
-  gl.append("line").attr("x1",-7).attr("y1",0).attr("x2",7).attr("y2",0).attr("stroke","#26c6da").attr("stroke-width",1);
-  gl.append("ellipse").attr("rx",3).attr("ry",7).attr("fill","none").attr("stroke","#26c6da").attr("stroke-width",1);
-  onlineHubG.append("text").attr("class","online-hub-label").attr("y",25).attr("font-size","11px").text("ONLINE");
+  gl.append("circle").attr("r",12).attr("fill","none").attr("stroke","#26c6da").attr("stroke-width",1.6);
+  gl.append("line").attr("x1",-12).attr("y1",0).attr("x2",12).attr("y2",0).attr("stroke","#26c6da").attr("stroke-width",1.2);
+  gl.append("ellipse").attr("rx",5).attr("ry",12).attr("fill","none").attr("stroke","#26c6da").attr("stroke-width",1.2);
+  onlineHubG.append("text").attr("class","online-hub-label").attr("y",38).attr("font-size","15px").text("ONLINE");
   onlineHubG.on("click",(ev)=>{ ev.stopPropagation(); track("click","[Online Hub]"); showOnlineHubPopup(ev); });
   positionOnlineHub();
 }
@@ -690,12 +695,12 @@ const legendEl = document.getElementById("legend");
 const mqMobile = window.matchMedia("(max-width:760px)");
 // Rebuilt whenever the school data changes (counts reflect the live dataset).
 function buildLegend(){
-  legendEl.innerHTML=`<div class="legend-title" id="legend-title">FACILITY TYPE<span class="legend-caret">▾</span></div>`;
+  legendEl.innerHTML=`<div class="legend-title" id="legend-title">MAP KEY<span class="legend-caret">▾</span></div>`;
   const catCounts={};
   SCHOOLS.forEach(s=>(s.categories||[]).forEach(c=>{catCounts[c]=(catCounts[c]||0)+1;}));
 
-  Object.entries(COLORS).forEach(([cat,color])=>{
-    if(!catCounts[cat])return;
+  const addItem=(cat)=>{
+    const color=COLORS[cat];
     const item=document.createElement("div");item.className="leg-item";
     if(!activeCategories.has(cat)) item.classList.add("off");
     item.innerHTML=`<div class="leg-dot" style="background:${color}"></div><div class="leg-name">${cat}</div><div class="leg-count">${catCounts[cat]}</div>`;
@@ -705,7 +710,20 @@ function buildLegend(){
       applyFilters();
     });
     legendEl.appendChild(item);
-  });
+  };
+  // Two distinct boxes: what the place IS, then what they train.
+  const facility = FACILITY_TYPES.filter(c=>catCounts[c]);
+  const training = Object.keys(COLORS).filter(c=>!FACILITY_TYPES.includes(c) && catCounts[c]);
+  const addSection=(title,first)=>{
+    const t=document.createElement("div");
+    t.className="leg-sec-title"+(first?" first":"");
+    t.textContent=title;
+    legendEl.appendChild(t);
+  };
+  addSection("Facility Type", true);
+  facility.forEach(addItem);
+  addSection("Training", false);
+  training.forEach(addItem);
 
   const btnRow=document.createElement("div");btnRow.className="leg-btns";
   const showAll=document.createElement("div");showAll.className="leg-btn";showAll.textContent="Show All";

@@ -130,7 +130,7 @@ td.tcats{color:#999;font-size:11px;}
       <span class="note" id="school-count"></span>
     </div>
     <table>
-      <thead><tr><th>Name</th><th>Type / Categories</th><th>Location</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Facility Type / Training</th><th>Location</th><th>Status</th><th></th></tr></thead>
       <tbody id="schools-body"></tbody>
     </table>
   </div>
@@ -152,7 +152,7 @@ td.tcats{color:#999;font-size:11px;}
         <select id="f-region">
           <option value="">—</option>
           <option>USA — West</option><option>USA — South</option><option>USA — Midwest</option><option>USA — Northeast</option>
-          <option>Canada</option><option>Europe</option><option>Asia-Pacific</option><option>Africa</option><option>South America</option><option>Online</option>
+          <option>Canada</option><option>Europe</option><option>Asia-Pacific</option><option>Africa</option><option>Latin America</option><option>South America</option><option>Online</option>
         </select>
       </label>
     </div>
@@ -171,7 +171,14 @@ td.tcats{color:#999;font-size:11px;}
         <select id="f-status"><option value="published">Published (visible on map)</option><option value="hidden">Hidden</option></select>
       </label>
     </div>
-    <label class="fld"><span>Facility type / categories (colors &amp; legend)</span></label>
+    <label class="fld"><span>Facility type — pick one (this is the ring color on the map)</span>
+      <select id="f-facility-type">
+        <option>Stunt Training Facility</option>
+        <option>Stunt School</option>
+        <option>Open Gym</option>
+      </select>
+    </label>
+    <label class="fld"><span>Training offered (pie colors on the map)</span></label>
     <div class="checkgrid" id="f-categories"></div>
     <label class="fld" style="margin-top:12px"><span>What they train (specialties)</span></label>
     <div class="checkgrid specs" id="f-specialties"></div>
@@ -186,8 +193,8 @@ td.tcats{color:#999;font-size:11px;}
 </div>
 
 <script>
-const CATEGORIES = ["Stunt School", "Stunt Training Facility", "Open Gym", "Fight Choreography", "Wirework, Rigging & Aerial", "Driving & Motorsports", "Firearms & Tactical", "Fire Burns", "Parkour", "Motion Capture & Previs", "Horse Stunts", "Kids Programs"];
-const SPECIALTIES = ["Aerial", "Aerial (Lyra)", "Aerial (Silks)", "Aerial (Straps)", "Air Ram", "Balintawak", "Boxing", "Brazilian Jiu-Jitsu", "Business Dynamics", "Capoeira", "Car Hits", "Creature Performance", "Drifting", "Fight Choreography", "Filipino Martial Arts", "Fire Burns", "Firearms", "Gunshot Reactions", "High Falls", "Horse Stunts", "Karate", "Kickboxing", "Kids", "Krav Maga", "Kung Fu", "MMA", "Martial Arts", "Mini Tramp", "Motion Capture", "Motocross", "Muay Thai", "Open Gym", "Parkour", "Previs", "Private Training", "Rally", "Rappelling", "Rescue Training", "Rigging", "Screen Combat", "Stage Combat", "Stair Falls", "Stunt Driving", "Swords", "Tactical Movement", "Taekwondo", "Tumbling", "Weapons", "Window Penetrations", "Wirework", "Wrestling"];
+const CATEGORIES = ["Fight Choreography", "Wirework, Rigging & Aerial", "Driving & Motorsports", "Firearms & Tactical", "Fire Burns", "Parkour", "Motion Capture & Previs", "Horse Stunts"];
+const SPECIALTIES = ["Aerial", "Aerial (Lyra)", "Aerial (Silks)", "Aerial (Straps)", "Air Ram", "Balintawak", "Boxing", "Brazilian Jiu-Jitsu", "Business Dynamics", "Capoeira", "Car Hits", "Creature Performance", "Drifting", "Fight Choreography", "Filipino Martial Arts", "Fire Burns", "Firearms", "Gunshot Reactions", "High Falls", "Horse Stunts", "Karate", "Kickboxing", "Kids", "Krav Maga", "Kung Fu", "MMA", "Martial Arts", "Mini Tramp", "Motion Capture", "Motocross", "Motorcycle Stunts", "Muay Thai", "Open Gym", "Parkour", "Previs", "Private Training", "Rally", "Rappelling", "Rescue Training", "Rigging", "Screen Combat", "Stage Combat", "Stair Falls", "Stunt Driving", "Swords", "Tactical Movement", "Taekwondo", "Tumbling", "Weapons", "Window Penetrations", "Wirework", "Wrestling"];
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -334,7 +341,7 @@ function renderSchools(){
   $("school-count").textContent = rows.length+" of "+DATA.schools.length+" facilities";
   $("schools-body").innerHTML = rows.map(s=>`<tr class="${s.status==='hidden'?'hidden-row':''}">
       <td class="name">${esc(s.name)}</td>
-      <td class="tcats">${esc(s.type||"")}${(s.categories&&s.categories.length)?`<br>${esc(s.categories.join(", "))}`:""}</td>
+      <td class="tcats"><b style="color:#bbb">${esc(s.facility_type||"—")}</b>${(s.categories&&s.categories.length)?`<br>${esc(s.categories.join(", "))}`:""}</td>
       <td>${esc(s.online?"Online":(s.location||""))}</td>
       <td>${s.status==="hidden"?'<span class="statuspill rejected">hidden</span>':'<span class="statuspill approved">live</span>'}</td>
       <td><button data-edit="${s.id}">Edit</button></td>
@@ -364,6 +371,7 @@ function fillForm(s){
   $("f-region").value=s.region||""; $("f-address").value=s.address||""; $("f-website").value=s.website||"";
   $("f-instagram").value=s.instagram||""; $("f-lat").value=(s.lat==null?"":s.lat); $("f-lon").value=(s.lon==null?"":s.lon);
   $("f-online").value=String(!!s.online); $("f-status").value=s.status||"published"; $("f-notes").value=s.notes||"";
+  $("f-facility-type").value=s.facility_type||"Stunt Training Facility";
   setChecks("f-categories", s.categories); setChecks("f-specialties", s.specialties);
   $("m-err").textContent="";
 }
@@ -404,7 +412,7 @@ function readForm(){
     region:$("f-region").value, address:$("f-address").value.trim(), website:$("f-website").value.trim(),
     instagram:$("f-instagram").value.trim(), lat:lat, lon:lon, online:$("f-online").value==="true",
     status:$("f-status").value, categories:getChecks("f-categories"), specialties:getChecks("f-specialties"),
-    notes:$("f-notes").value.trim()
+    facility_type:$("f-facility-type").value, notes:$("f-notes").value.trim()
   };
 }
 $("m-save").addEventListener("click",async()=>{

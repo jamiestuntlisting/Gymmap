@@ -22,6 +22,9 @@ const err = (message, status = 400) =>
 const S = (v) => (v == null ? "" : String(v)).slice(0, 2000);        // sanitized short string
 const ARR = (v) => JSON.stringify(Array.isArray(v) ? v.map((x) => S(x)).slice(0, 64) : []);
 const NUM = (v) => (v === "" || v == null || isNaN(Number(v)) ? null : Number(v));
+// Every facility is exactly one type; anything unrecognized falls back.
+const FACILITY_TYPES = ["Stunt School", "Stunt Training Facility", "Open Gym"];
+const FTYPE = (v) => (FACILITY_TYPES.includes(v) ? v : "Stunt Training Facility");
 
 function parseSchoolRow(r) {
   return {
@@ -31,6 +34,7 @@ function parseSchoolRow(r) {
     location: r.location || "", region: r.region || "", address: r.address || "",
     website: r.website || "", instagram: r.instagram || "",
     lat: r.lat, lon: r.lon, online: !!r.online,
+    facility_type: r.facility_type || "Stunt Training Facility",
     status: r.status, notes: r.notes || "",
     created_at: r.created_at, updated_at: r.updated_at,
   };
@@ -66,22 +70,24 @@ async function saveSchool(env, s) {
   if (id) {
     await env.DB.prepare(
       `UPDATE schools SET name=?,type=?,categories=?,location=?,region=?,address=?,website=?,instagram=?,
-       specialties=?,lat=?,lon=?,online=?,status=?,notes=?,updated_at=datetime('now') WHERE id=?`
+       specialties=?,lat=?,lon=?,online=?,status=?,notes=?,facility_type=?,updated_at=datetime('now') WHERE id=?`
     ).bind(
       S(s.name), S(s.type), ARR(s.categories), S(s.location), S(s.region), S(s.address),
       S(s.website), S(s.instagram), ARR(s.specialties), NUM(s.lat), NUM(s.lon),
-      s.online ? 1 : 0, s.status === "hidden" ? "hidden" : "published", S(s.notes), id
+      s.online ? 1 : 0, s.status === "hidden" ? "hidden" : "published", S(s.notes),
+      FTYPE(s.facility_type), id
     ).run();
     return id;
   }
   const newId = crypto.randomUUID();
   await env.DB.prepare(
-    `INSERT INTO schools (id,name,type,categories,location,region,address,website,instagram,specialties,lat,lon,online,status,notes)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    `INSERT INTO schools (id,name,type,categories,location,region,address,website,instagram,specialties,lat,lon,online,status,notes,facility_type)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).bind(
     newId, S(s.name), S(s.type), ARR(s.categories), S(s.location), S(s.region), S(s.address),
     S(s.website), S(s.instagram), ARR(s.specialties), NUM(s.lat), NUM(s.lon),
-    s.online ? 1 : 0, s.status === "hidden" ? "hidden" : "published", S(s.notes)
+    s.online ? 1 : 0, s.status === "hidden" ? "hidden" : "published", S(s.notes),
+    FTYPE(s.facility_type)
   ).run();
   return newId;
 }

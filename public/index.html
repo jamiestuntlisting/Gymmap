@@ -131,8 +131,19 @@ select option{background:#111;color:#ccc;}
 /* LEGEND */
 #legend{position:absolute;bottom:16px;left:12px;z-index:100;background:rgba(6,6,6,0.93);border:1px solid #1a1a1a;border-radius:4px;padding:10px 12px;width:215px;}
 .legend-title{font-family:"Bebas Neue",sans-serif;font-size:12px;letter-spacing:2px;color:#cc0000;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid #1a1a1a;}
-.leg-sec-title{font-size:9px;color:#777;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin:9px 0 4px;padding-top:8px;border-top:1px solid #1a1a1a;}
-.leg-sec-title.first{margin-top:2px;padding-top:0;border-top:none;}
+.leg-sec-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin:10px 0 5px;padding-top:8px;border-top:1px solid #1f1f1f;}
+.leg-sec-title:first-of-type{margin-top:3px;padding-top:0;border-top:none;}
+.leg-sec-note{font-size:9px;color:#4a4a4a;letter-spacing:.5px;text-transform:none;font-weight:500;}
+/* Facility type is drawn as a ring around each dot, so the key shows a ring */
+.leg-ring{width:11px;height:11px;border-radius:50%;border:2px solid #888;flex-shrink:0;box-sizing:border-box;}
+.leg-exp{color:#555;font-size:9px;padding:0 4px;cursor:pointer;}
+.leg-exp:hover{color:#cc0000;}
+.leg-subs{display:none;margin:1px 0 4px 17px;padding-left:7px;border-left:1px solid #1f1f1f;}
+.leg-subs.open{display:block;}
+.leg-sub{display:flex;align-items:center;gap:6px;padding:2px 3px;border-radius:2px;cursor:pointer;color:#7a7a7a;}
+.leg-sub .leg-name{font-size:10px;color:inherit;}
+.leg-sub:hover{background:rgba(255,255,255,.04);color:#bbb;}
+.leg-sub.on{color:#fff;background:rgba(204,0,0,.22);}
 .leg-item{display:flex;align-items:center;gap:7px;padding:2px 3px;border-radius:2px;cursor:pointer;transition:background 0.12s;}
 .leg-item:hover{background:rgba(255,255,255,0.04);}
 .leg-item.off{opacity:0.28;}
@@ -298,16 +309,18 @@ track("view");
 // Offline fallback dataset (see fallback-data.js); replaced by the live API on load.
 let SCHOOLS = window.FALLBACK_SCHOOLS || [];
 
-const ALL_SPECIALTIES = ["Aerial", "Aerial (Lyra)", "Aerial (Silks)", "Aerial (Straps)", "Air Ram", "Balintawak", "Boxing", "Brazilian Jiu-Jitsu", "Business Dynamics", "Capoeira", "Car Hits", "Creature Performance", "Drifting", "Fight Choreography", "Filipino Martial Arts", "Fire Burns", "Firearms", "Gunshot Reactions", "High Falls", "Horse Stunts", "Karate", "Kickboxing", "Krav Maga", "Kung Fu", "MMA", "Martial Arts", "Mini Tramp", "Motion Capture", "Motocross", "Muay Thai", "Open Gym", "Parkour", "Previs", "Private Training", "Rally", "Rappelling", "Rescue Training", "Rigging", "Screen Combat", "Stage Combat", "Stair Falls", "Stunt Driving", "Swords", "Tactical Movement", "Taekwondo", "Tumbling", "Weapons", "Window Penetrations", "Wirework", "Wrestling"];
+const ALL_SPECIALTIES = ["Aerial", "Aerial (Lyra)", "Aerial (Silks)", "Aerial (Straps)", "Air Ram", "Balintawak", "Boxing", "Brazilian Jiu-Jitsu", "Business Dynamics", "Capoeira", "Car Hits", "Creature Performance", "Drifting", "Fight Choreography", "Filipino Martial Arts", "Fire Burns", "Firearms", "Gunshot Reactions", "High Falls", "Horse Stunts", "Karate", "Kickboxing", "Krav Maga", "Kung Fu", "MMA", "Martial Arts", "Mini Tramp", "Motion Capture", "Motocross", "Motorcycle Stunts", "Muay Thai", "Open Gym", "Parkour", "Previs", "Private Training", "Rally", "Rappelling", "Rescue Training", "Rigging", "Screen Combat", "Stage Combat", "Stair Falls", "Stunt Driving", "Swords", "Tactical Movement", "Taekwondo", "Tumbling", "Weapons", "Window Penetrations", "Wirework", "Wrestling"];
 
-// Facility types (what the place IS) are a separate legend box from the
-// training disciplines (what they teach).
-// "Kids Programs" is intentionally absent — kept in the data but hidden for now.
+// A facility is exactly ONE type (the colored RING around each dot); the pie
+// slices inside the ring are the training disciplines it offers. Facility-type
+// counts therefore add up to the total, while training counts can overlap.
 const FACILITY_TYPES = ["Stunt School", "Stunt Training Facility", "Open Gym"];
+const FACILITY_COLORS = {
+  "Stunt School":            "#ff3b3b",
+  "Stunt Training Facility": "#ffd23f",
+  "Open Gym":                "#35d07f",
+};
 const COLORS = {
-  "Stunt School":               "#5c6bc0",
-  "Stunt Training Facility":    "#90a4ae",
-  "Open Gym":                   "#7bc67e",
   "Fight Choreography":         "#e91e8c",
   "Wirework, Rigging & Aerial": "#00d4d4",
   "Driving & Motorsports":      "#f5a623",
@@ -317,25 +330,42 @@ const COLORS = {
   "Motion Capture & Previs":    "#26c6da",
   "Horse Stunts":               "#a1887f",
 };
+// Each training discipline expands into the specialties that belong to it, so
+// "Fight Choreography" can be narrowed to just Stage Combat, just Swords, etc.
+const SUB_SPECIALTIES = {
+  "Fight Choreography": ["Fight Choreography","Screen Combat","Stage Combat","Martial Arts","Swords","Weapons","Boxing","MMA","Muay Thai","Kickboxing","Karate","Kung Fu","Taekwondo","Krav Maga","Brazilian Jiu-Jitsu","Filipino Martial Arts","Balintawak","Capoeira","Wrestling","Creature Performance"],
+  "Wirework, Rigging & Aerial": ["Wirework","Rigging","Aerial","Aerial (Lyra)","Aerial (Silks)","Aerial (Straps)","High Falls","Stair Falls","Air Ram","Mini Tramp","Rappelling","Rescue Training","Window Penetrations"],
+  "Driving & Motorsports": ["Stunt Driving","Motorcycle Stunts","Drifting","Rally","Motocross","Car Hits"],
+  "Firearms & Tactical": ["Firearms","Tactical Movement","Gunshot Reactions"],
+  "Fire Burns": ["Fire Burns"],
+  "Parkour": ["Parkour","Tumbling"],
+  "Motion Capture & Previs": ["Motion Capture","Previs"],
+  "Horse Stunts": ["Horse Stunts"],
+};
 
-// Older records (embedded fallback or a not-yet-migrated database) may still
-// carry earlier category names — normalize them on load so the map is
-// consistent regardless of which data source it got. "Fight Choreography"
-// covers fighting for film, stage combat, martial arts, and weapons work.
+// Older records may still carry earlier category names — normalize on load.
 const CAT_MAP = {
   "Combat":"Fight Choreography", "Martial Arts":"Fight Choreography",
   "Screen / Stage Combat":"Fight Choreography", "Weapons & Swords":"Fight Choreography",
   "Wirework & Aerial":"Wirework, Rigging & Aerial", "Rescue Training":"Wirework, Rigging & Aerial",
-  "Fire Burns & Pyrotechnics":"Fire Burns", "Stunt Gym":"Stunt Training Facility",
-  "General":"Stunt School", "Edited Demo Reel":null,
+  "Fire Burns & Pyrotechnics":"Fire Burns", "Stunt Gym":null,
+  "General":null, "Edited Demo Reel":null, "Kids Programs":null,
+  "Stunt School":null, "Stunt Training Facility":null, "Open Gym":null,
 };
 function normalizeCategories(s){
+  // Derive the facility type if the record predates the facility_type field.
+  if(!s.facility_type){
+    const c = s.categories||[], sp = s.specialties||[];
+    s.facility_type = c.includes("Stunt School") ? "Stunt School"
+      : (c.includes("Open Gym")||sp.includes("Open Gym")) ? "Open Gym"
+      : "Stunt Training Facility";
+  }
+  if(!FACILITY_COLORS[s.facility_type]) s.facility_type = "Stunt Training Facility";
   const out = [];
   (s.categories||[]).forEach(c=>{
     const m = Object.prototype.hasOwnProperty.call(CAT_MAP,c) ? CAT_MAP[c] : c;
-    if(m && !out.includes(m)) out.push(m);
+    if(m && COLORS[m] && !out.includes(m)) out.push(m);
   });
-  if((s.specialties||[]).includes("Open Gym") && !out.includes("Open Gym")) out.push("Open Gym");
   s.categories = out;
   return s;
 }
@@ -380,6 +410,7 @@ const zoom = d3.zoom()
   .constrain(t => d3.zoomIdentity.translate(t.x, clampY(t)).scale(t.k))
   .on("zoom", ev => {
     const t = ev.transform, k = t.k;
+    curK = k;
     const worldW = W * k;
     let wx = t.x % worldW; if(wx > 0) wx -= worldW;   // wrap pan into (-worldW, 0]
     g.attr("transform", `translate(${wx},${t.y}) scale(${k})`);
@@ -423,8 +454,12 @@ function isOnline(s){ return s.online === true || s.region === "Online" || s.loc
 function baseLatLon(s){ return isOnline(s) ? [ONLINE_HUB.lat, ONLINE_HUB.lon] : [s.lat, s.lon]; }
 
 // Jitter
-let locMap={};
-function buildLocMap(){ locMap={}; SCHOOLS.forEach(s=>{const[la,lo]=baseLatLon(s);const k=la+","+lo;if(!locMap[k])locMap[k]=[];locMap[k].push(s);}); }
+let locMap={}, onlineList=[];
+function buildLocMap(){
+  locMap={};
+  SCHOOLS.forEach(s=>{const[la,lo]=baseLatLon(s);const k=la+","+lo;if(!locMap[k])locMap[k]=[];locMap[k].push(s);});
+  onlineList = SCHOOLS.filter(isOnline);
+}
 buildLocMap();
 function jittered(s){
   const[la,lo]=baseLatLon(s);
@@ -433,11 +468,42 @@ function jittered(s){
   const a=(2*Math.PI*i)/n,r=Math.min(0.3*n,1.5);
   return[lo+r*Math.cos(a),la+r*Math.sin(a)];
 }
-function cx(s){const[lo,la]=jittered(s),p=projection([lo,la]);return p?p[0]:-9999;}
-function cy(s){const[lo,la]=jittered(s),p=projection([lo,la]);return p?p[1]:-9999;}
+
+// Online-only facilities orbit the hub like electrons: evenly spaced on rings
+// that sit outside the globe glyph. Radii are expressed in the hub's own local
+// units, so the orbit keeps its size on screen at every zoom level (the faint
+// orbit rings drawn in drawOnlineHub use the same numbers and line up exactly).
+const ORBIT_R0 = 42, ORBIT_STEP = 20, ORBIT_PER_RING = 9;
+let curK = 1;   // latest zoom scale, kept in sync by the zoom/resize handlers
+function orbitRings(n){ return Math.max(1, Math.ceil(n / ORBIT_PER_RING)); }
+function orbitOffset(i, n){
+  const ring = Math.floor(i / ORBIT_PER_RING);
+  const inRing = i % ORBIT_PER_RING;
+  const ringN = Math.min(n - ring*ORBIT_PER_RING, ORBIT_PER_RING);
+  // Stagger alternate rings so electrons don't line up radially
+  const a = (2*Math.PI*inRing)/ringN - Math.PI/2 + (ring % 2 ? Math.PI/ringN : 0);
+  const r = (ORBIT_R0 + ring*ORBIT_STEP) * dotScale(curK);
+  return [r*Math.cos(a), r*Math.sin(a)];
+}
+function projected(s){
+  if(isOnline(s)){
+    const p = projection([ONLINE_HUB.lon, ONLINE_HUB.lat]);
+    if(!p) return null;
+    const i = onlineList.indexOf(s);
+    if(i < 0) return p;
+    const [dx,dy] = orbitOffset(i, onlineList.length);
+    return [p[0]+dx, p[1]+dy];
+  }
+  const [lo,la] = jittered(s);
+  return projection([lo,la]);
+}
+function cx(s){const p=projected(s);return p?p[0]:-9999;}
+function cy(s){const p=projected(s);return p?p[1]:-9999;}
 
 // ── FILTER STATE ──────────────────────────────────────────────────────────────
 const activeCategories = new Set(Object.keys(COLORS));
+const activeFacilityTypes = new Set(FACILITY_TYPES);
+let currentSubSpec = "";   // drill-down inside one training discipline
 let visibleSchools = new Set(SCHOOLS);
 let currentSearch = "", currentSpec = "", currentLoc = "";
 let openGymsOnly = false; // "Open Gyms" toolbar toggle — only schools tagged with the "Open Gym" specialty
@@ -458,9 +524,12 @@ function schoolMatches(d){
     || (d.location && d.location.toLowerCase().includes(q))
     || (d.address && d.address.toLowerCase().includes(q));
   const matchSpec = !currentSpec || (d.specialties && d.specialties.some(s=>s===currentSpec));
-  const matchCat = d.categories.some(c => activeCategories.has(c));
-  const matchGym = !openGymsOnly || (d.specialties && d.specialties.includes("Open Gym"));
-  return matchQ && matchSpec && matchCat && matchGym;
+  const matchSub  = !currentSubSpec || (d.specialties && d.specialties.some(s=>s===currentSubSpec));
+  const matchType = activeFacilityTypes.has(d.facility_type);
+  // A facility with no training tags still shows as long as its type is on.
+  const matchCat = !d.categories.length || d.categories.some(c => activeCategories.has(c));
+  const matchGym = !openGymsOnly || d.facility_type === "Open Gym";
+  return matchQ && matchSpec && matchSub && matchType && matchCat && matchGym;
 }
 
 function igUrl(h){ return "https://instagram.com/"+h.trim().replace(/^@/,"").replace(/\s+/g,""); }
@@ -489,12 +558,20 @@ function positionOnlineHub(){
 }
 function drawOnlineHub(){
   onlineHubG = worldContent.append("g").attr("class","online-hub").style("cursor","pointer");
+  // Faint orbit shells — the online facilities sit on these like electrons
+  const rings = orbitRings(SCHOOLS.filter(isOnline).length);
+  for(let i=0;i<rings;i++){
+    onlineHubG.append("circle").attr("r", ORBIT_R0 + i*ORBIT_STEP).attr("fill","none")
+      .attr("stroke","#26c6da").attr("stroke-opacity",0.28)
+      .attr("stroke-width",0.9).attr("stroke-dasharray","3 4").style("pointer-events","none");
+  }
   onlineHubG.append("circle").attr("r",22).attr("fill","#08222a").attr("stroke","#26c6da").attr("stroke-width",2);
   const gl = onlineHubG.append("g"); // simple globe / internet glyph
   gl.append("circle").attr("r",12).attr("fill","none").attr("stroke","#26c6da").attr("stroke-width",1.6);
   gl.append("line").attr("x1",-12).attr("y1",0).attr("x2",12).attr("y2",0).attr("stroke","#26c6da").attr("stroke-width",1.2);
   gl.append("ellipse").attr("rx",5).attr("ry",12).attr("fill","none").attr("stroke","#26c6da").attr("stroke-width",1.2);
-  onlineHubG.append("text").attr("class","online-hub-label").attr("y",38).attr("font-size","15px").text("ONLINE");
+  const labelY = ORBIT_R0 + orbitRings(SCHOOLS.filter(isOnline).length-1)*ORBIT_STEP + 20;
+  onlineHubG.append("text").attr("class","online-hub-label").attr("y",labelY).attr("font-size","15px").text("ONLINE");
   onlineHubG.on("click",(ev)=>{ ev.stopPropagation(); track("click","[Online Hub]"); showOnlineHubPopup(ev); });
   positionOnlineHub();
 }
@@ -536,11 +613,11 @@ function drawPieDot(g, school, overrideColor) {
     g.append("circle").attr("r", R).attr("fill", overrideColor)
       .attr("stroke","rgba(0,0,0,0.55)").attr("stroke-width",1);
   } else if (cats.length <= 1) {
-    const col = cats.length === 1 ? (COLORS[cats[0]]||"#888") : "#888";
+    const col = cats.length === 1 ? (COLORS[cats[0]]||"#888") : "#555";
     g.append("circle").attr("r", R).attr("fill", col)
       .attr("stroke","rgba(0,0,0,0.55)").attr("stroke-width",1);
   } else {
-    // Pie slices
+    // Pie slices — one per training discipline
     const arc = d3.arc().innerRadius(0).outerRadius(R);
     const pie = d3.pie().sort(null).value(1)(cats);
     pie.forEach(slice => {
@@ -549,14 +626,20 @@ function drawPieDot(g, school, overrideColor) {
         .attr("stroke","rgba(0,0,0,0.4)").attr("stroke-width",0.5);
     });
   }
+  // Facility type = a colored ring around the pie (red school / amber training
+  // facility / green open gym). Every facility has exactly one.
+  const ringCol = FACILITY_COLORS[school.facility_type] || FACILITY_COLORS["Stunt Training Facility"];
+  g.append("circle").attr("r", R + 2.1).attr("fill","none")
+    .attr("stroke", ringCol).attr("stroke-width", 1.9);
   // Transparent hit area on top — enlarges the tap target for touch devices
-  g.append("circle").attr("r", R + 5).attr("fill", "transparent").style("pointer-events", "all");
+  g.append("circle").attr("r", R + 6).attr("fill", "transparent").style("pointer-events", "all");
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderDots() {
   dotGroup.selectAll("*").remove();
   const k = d3.zoomTransform(svg.node()).k;
+  curK = k;
 
   // One real, interactive copy of every dot per horizontal world (for the wrap)
   DOT_OFFSETS.forEach(m => {
@@ -610,13 +693,15 @@ function applyFilters() {
     // Location dropdown match
     const matchLoc = !loc || d.region === loc;
 
-    // Legend category match — school must have at least one active category
-    const matchCat = d.categories.some(c => activeCategories.has(c));
+    // Legend matches: facility type (exclusive) + training disciplines
+    const matchType = activeFacilityTypes.has(d.facility_type);
+    const matchCat = !d.categories.length || d.categories.some(c => activeCategories.has(c));
+    const matchSub = !currentSubSpec || (d.specialties && d.specialties.some(s=>s===currentSubSpec));
 
-    // "Open Gyms" toggle — only schools tagged with the "Open Gym" specialty
-    const matchGym = !openGymsOnly || (d.specialties && d.specialties.includes("Open Gym"));
+    // "Open Gyms" toggle — facilities whose type is Open Gym
+    const matchGym = !openGymsOnly || d.facility_type === "Open Gym";
 
-    const show = matchQ && matchSpec && matchLoc && matchCat && matchGym;
+    const show = matchQ && matchSpec && matchLoc && matchType && matchCat && matchSub && matchGym;
 
     if(show){ visibleSchools.add(d); }
 
@@ -640,7 +725,9 @@ function applyFilters() {
   });
 
   const badge = document.getElementById("result-badge");
-  const isFiltered = q||spec||loc||openGymsOnly||catFilter.length<Object.keys(COLORS).length;
+  const isFiltered = q||spec||loc||openGymsOnly||currentSubSpec
+    ||catFilter.length<Object.keys(COLORS).length
+    ||activeFacilityTypes.size<FACILITY_TYPES.length;
   if(isFiltered){badge.style.display="block";document.getElementById("rc").textContent=visibleSchools.size;}
   else badge.style.display="none";
 
@@ -696,40 +783,103 @@ const mqMobile = window.matchMedia("(max-width:760px)");
 // Rebuilt whenever the school data changes (counts reflect the live dataset).
 function buildLegend(){
   legendEl.innerHTML=`<div class="legend-title" id="legend-title">MAP KEY<span class="legend-caret">▾</span></div>`;
-  const catCounts={};
-  SCHOOLS.forEach(s=>(s.categories||[]).forEach(c=>{catCounts[c]=(catCounts[c]||0)+1;}));
 
-  const addItem=(cat)=>{
-    const color=COLORS[cat];
-    const item=document.createElement("div");item.className="leg-item";
-    if(!activeCategories.has(cat)) item.classList.add("off");
-    item.innerHTML=`<div class="leg-dot" style="background:${color}"></div><div class="leg-name">${cat}</div><div class="leg-count">${catCounts[cat]}</div>`;
+  const typeCounts={}, catCounts={}, specCounts={};
+  SCHOOLS.forEach(s=>{
+    typeCounts[s.facility_type]=(typeCounts[s.facility_type]||0)+1;
+    (s.categories||[]).forEach(c=>{catCounts[c]=(catCounts[c]||0)+1;});
+    (s.specialties||[]).forEach(sp=>{specCounts[sp]=(specCounts[sp]||0)+1;});
+  });
+
+  const section=(title,note)=>{
+    const t=document.createElement("div");
+    t.className="leg-sec-title";
+    t.innerHTML=`${title}${note?`<span class="leg-sec-note">${note}</span>`:""}`;
+    legendEl.appendChild(t);
+    return t;
+  };
+
+  // ── Box 1: facility type — every facility is exactly one, so these sum to the total
+  section("Facility Type", SCHOOLS.length);
+  FACILITY_TYPES.forEach(t=>{
+    if(!typeCounts[t]) return;
+    const item=document.createElement("div");
+    item.className="leg-item"+(activeFacilityTypes.has(t)?"":" off");
+    item.innerHTML=`<div class="leg-ring" style="border-color:${FACILITY_COLORS[t]}"></div>`
+      +`<div class="leg-name">${t}</div><div class="leg-count">${typeCounts[t]}</div>`;
     item.addEventListener("click",()=>{
+      if(activeFacilityTypes.has(t)){activeFacilityTypes.delete(t);item.classList.add("off");}
+      else{activeFacilityTypes.add(t);item.classList.remove("off");}
+      applyFilters();
+    });
+    legendEl.appendChild(item);
+  });
+
+  // ── Box 2: training — a facility can offer several, so these overlap
+  section("Training", "tap to refine");
+  Object.keys(COLORS).forEach(cat=>{
+    if(!catCounts[cat]) return;
+    const wrap=document.createElement("div");
+    const item=document.createElement("div");
+    item.className="leg-item"+(activeCategories.has(cat)?"":" off");
+    const subs=(SUB_SPECIALTIES[cat]||[]).filter(sp=>specCounts[sp]);
+    item.innerHTML=`<div class="leg-dot" style="background:${COLORS[cat]}"></div>`
+      +`<div class="leg-name">${cat}</div>`
+      +(subs.length>1?`<span class="leg-exp">▸</span>`:"")
+      +`<div class="leg-count">${catCounts[cat]}</div>`;
+    wrap.appendChild(item);
+
+    // Drill-down: filter to one specialty inside this discipline
+    let subBox=null;
+    if(subs.length>1){
+      subBox=document.createElement("div");
+      subBox.className="leg-subs";
+      subs.forEach(sp=>{
+        const si=document.createElement("div");
+        si.className="leg-sub"+(currentSubSpec===sp?" on":"");
+        si.innerHTML=`<div class="leg-name">${sp}</div><div class="leg-count">${specCounts[sp]}</div>`;
+        si.addEventListener("click",ev=>{
+          ev.stopPropagation();
+          currentSubSpec = (currentSubSpec===sp) ? "" : sp;
+          legendEl.querySelectorAll(".leg-sub").forEach(x=>x.classList.remove("on"));
+          if(currentSubSpec) si.classList.add("on");
+          applyFilters();
+        });
+        subBox.appendChild(si);
+      });
+      wrap.appendChild(subBox);
+    }
+
+    item.addEventListener("click",ev=>{
+      // The caret expands the sub-list; the row itself toggles the discipline
+      if(subBox && ev.target.classList.contains("leg-exp")){
+        const open=subBox.classList.toggle("open");
+        item.querySelector(".leg-exp").textContent = open ? "▾" : "▸";
+        return;
+      }
       if(activeCategories.has(cat)){activeCategories.delete(cat);item.classList.add("off");}
       else{activeCategories.add(cat);item.classList.remove("off");}
       applyFilters();
     });
-    legendEl.appendChild(item);
-  };
-  // Two distinct boxes: what the place IS, then what they train.
-  const facility = FACILITY_TYPES.filter(c=>catCounts[c]);
-  const training = Object.keys(COLORS).filter(c=>!FACILITY_TYPES.includes(c) && catCounts[c]);
-  const addSection=(title,first)=>{
-    const t=document.createElement("div");
-    t.className="leg-sec-title"+(first?" first":"");
-    t.textContent=title;
-    legendEl.appendChild(t);
-  };
-  addSection("Facility Type", true);
-  facility.forEach(addItem);
-  addSection("Training", false);
-  training.forEach(addItem);
+    legendEl.appendChild(wrap);
+  });
 
   const btnRow=document.createElement("div");btnRow.className="leg-btns";
   const showAll=document.createElement("div");showAll.className="leg-btn";showAll.textContent="Show All";
-  showAll.addEventListener("click",()=>{Object.keys(COLORS).forEach(c=>activeCategories.add(c));legendEl.querySelectorAll(".leg-item").forEach(el=>el.classList.remove("off"));applyFilters();});
+  showAll.addEventListener("click",()=>{
+    Object.keys(COLORS).forEach(c=>activeCategories.add(c));
+    FACILITY_TYPES.forEach(t=>activeFacilityTypes.add(t));
+    currentSubSpec="";
+    legendEl.querySelectorAll(".leg-item").forEach(el=>el.classList.remove("off"));
+    legendEl.querySelectorAll(".leg-sub").forEach(el=>el.classList.remove("on"));
+    applyFilters();
+  });
   const deselectAll=document.createElement("div");deselectAll.className="leg-btn";deselectAll.textContent="Deselect All";
-  deselectAll.addEventListener("click",()=>{activeCategories.clear();legendEl.querySelectorAll(".leg-item").forEach(el=>el.classList.add("off"));applyFilters();});
+  deselectAll.addEventListener("click",()=>{
+    activeCategories.clear();
+    legendEl.querySelectorAll(".leg-item").forEach(el=>el.classList.add("off"));
+    applyFilters();
+  });
   btnRow.appendChild(showAll);btnRow.appendChild(deselectAll);
   legendEl.appendChild(btnRow);
 
@@ -785,6 +935,7 @@ window.addEventListener("resize",()=>{
   // Re-apply the current zoom transform so x-wrap / y-clamp recompute for the new size
   svg.call(zoom.transform, d3.zoomTransform(svg.node()));
   const k=d3.zoomTransform(svg.node()).k;
+  curK = k;
   dotGroup.selectAll(".school-dot-g").attr("transform",d=>`translate(${cx(d)},${cy(d)}) scale(${dotScale(k)})`);
   positionOnlineHub();
 });

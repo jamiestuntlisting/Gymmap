@@ -8,11 +8,14 @@
 //   POST /api/submissions        → "Add a school" form (pending admin review)
 //   POST /api/claims             → "This is my school" form (pending admin review)
 //   GET  /api/analytics-summary  → aggregate counts only (no raw rows)
+//   GET  /api/migrations         → which embedded migrations have been applied
 //
 // Admin endpoints (all POST, body must include the admin password):
 //   /api/admin/data, /api/admin/save-school, /api/admin/delete-school,
 //   /api/admin/approve-submission, /api/admin/set-submission,
 //   /api/admin/set-claim, /api/admin/change-password
+
+import { MIGRATIONS } from "./migrations.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const ok = (data) => new Response(JSON.stringify(data), { headers: JSON_HEADERS });
@@ -92,6 +95,44 @@ async function saveSchool(env, s) {
   return newId;
 }
 
+// ── SELF-APPLYING MIGRATIONS ─────────────────────────────────────────────────
+// Runs once per isolate: anything in MIGRATIONS that isn't in the _migrations
+// ledger gets applied, in order, then recorded. Deploying new code is all it
+// takes to move the schema forward.
+let migrationRun = null;
+async function ensureMigrations(env) {
+  if (!migrationRun) {
+    migrationRun = applyMigrations(env).catch((e) => {
+      migrationRun = null;   // let the next request retry
+      throw e;
+    });
+  }
+  return migrationRun;
+}
+async function applyMigrations(env) {
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS _migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))"
+  ).run();
+  const { results } = await env.DB.prepare("SELECT id FROM _migrations").all();
+  const done = new Set(results.map((r) => r.id));
+  const applied = [];
+  for (const m of MIGRATIONS) {
+    if (done.has(m.id)) continue;
+    for (const stmt of m.statements) {
+      try {
+        await env.DB.prepare(stmt).run();
+      } catch (e) {
+        // A column/table that already exists means this step was done by hand;
+        // anything else is a real failure and should surface.
+        if (!/duplicate column|already exists/i.test(e.message)) throw e;
+      }
+    }
+    await env.DB.prepare("INSERT OR IGNORE INTO _migrations (id) VALUES (?)").bind(m.id).run();
+    applied.push(m.id);
+  }
+  return applied;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -100,6 +141,15 @@ export default {
     if (!path.startsWith("/api/")) return env.ASSETS.fetch(request);
 
     try {
+      await ensureMigrations(env);
+
+      // Migration status (safe to expose: ids and timestamps only)
+      if (path === "/api/migrations") {
+        const { results } = await env.DB.prepare(
+          "SELECT id, applied_at FROM _migrations ORDER BY id"
+        ).all();
+        return ok({ applied: results, known: MIGRATIONS.map((m) => m.id) });
+      }
       // ── public: schools ────────────────────────────────────────────────────
       if (path === "/api/schools" && request.method === "GET") {
         const { results } = await env.DB.prepare(

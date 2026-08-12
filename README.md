@@ -32,6 +32,23 @@ npx wrangler deploy
 claims, analytics history, admin password hash) with the 0002 XMA fixes
 already applied, so a fresh database is immediately production-ready.
 
+## Migrations
+
+`migrations/0001`–`0006` are the one-time bootstrap for a brand-new database
+(see above). From `0007` onward, migrations are **embedded in the Worker**
+(`src/migrations.js`) and apply themselves on the first request after a deploy —
+each exactly once, tracked in a `_migrations` ledger table, and safe to re-run.
+Deploying new code is all it takes to move the schema forward; no CLI step.
+
+Check what's applied at any time:
+
+```
+curl https://<your-worker>/api/migrations
+```
+
+To add one: append an entry to `MIGRATIONS` in `src/migrations.js` (keep the
+matching `.sql` file in `migrations/` for reference) and deploy.
+
 ## Deploying
 
 The Worker (with its static assets and D1 binding) deploys from `wrangler.jsonc`:

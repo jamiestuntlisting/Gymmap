@@ -2,6 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/",
+      "destination": "https://gymmap.jamie-181.workers.dev/",
+      "permanent": false
+    },
+    {
       "source": "/:path*",
       "destination": "https://gymmap.jamie-181.workers.dev/:path*",
       "permanent": false

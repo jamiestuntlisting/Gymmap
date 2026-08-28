@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>StuntListing — Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Inter",sans-serif;background:#080808;color:#f0f0f0;min-height:100vh;min-height:100dvh;-webkit-text-size-adjust:100%;}
+header{background:#080808;border-bottom:2px solid #cc0000;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.logo{font-family:"Bebas Neue",sans-serif;font-size:26px;letter-spacing:2px;line-height:1;}
+.logo .stunt{color:#fff;}.logo .listing{color:#cc0000;}
+.logo .sub{display:block;color:#666;font-size:11px;font-family:"Inter",sans-serif;font-weight:500;letter-spacing:1.5px;margin-top:2px;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+#since{font-size:11px;color:#555;}
+button.refresh{background:#111;border:1px solid #252525;color:#ccc;border-radius:3px;font-family:"Inter",sans-serif;font-size:12px;padding:7px 12px;cursor:pointer;transition:border-color .2s,color .2s;}
+button.refresh:hover{border-color:#cc0000;color:#fff;}
+main{padding:18px;max-width:1000px;margin:0 auto;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;}
+.card{background:#0c0c0c;border:1px solid #1a1a1a;border-radius:5px;padding:16px;}
+.card .num{font-family:"Bebas Neue",sans-serif;font-size:38px;color:#cc0000;line-height:1;}
+.card .lbl{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-top:6px;}
+.section{background:#0c0c0c;border:1px solid #1a1a1a;border-radius:5px;padding:16px;margin-bottom:18px;}
+.section h2{font-family:"Bebas Neue",sans-serif;font-size:16px;letter-spacing:2px;color:#cc0000;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #1a1a1a;}
+table{width:100%;border-collapse:collapse;}
+th,td{text-align:left;padding:7px 8px;font-size:13px;border-bottom:1px solid #141414;}
+th{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px;}
+td.clicks{text-align:right;color:#cc0000;font-weight:600;font-variant-numeric:tabular-nums;}
+td.rank{color:#444;width:34px;font-variant-numeric:tabular-nums;}
+.bar-cell{width:38%;}
+.bar{height:8px;background:#cc0000;border-radius:2px;min-width:2px;}
+.bar-track{background:#141414;border-radius:2px;overflow:hidden;}
+.day-row{display:flex;align-items:center;gap:10px;font-size:12px;padding:4px 0;}
+.day-row .d{color:#888;width:96px;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.day-row .v{color:#aaa;width:46px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.day-row .bar-track{flex:1;}
+.muted{color:#555;font-size:13px;padding:8px 0;}
+#status{font-size:12px;color:#666;padding:40px 0;text-align:center;}
+.err{color:#cc4444;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div><span class="stunt">STUNT</span><span class="listing">LISTING</span></div>
+    <span class="sub">Analytics &middot; private</span>
+  </div>
+  <div class="header-right">
+    <span id="since"></span>
+    <button class="refresh" id="refresh">↻ Refresh</button>
+  </div>
+</header>
+<main>
+  <div id="status">Loading analytics…</div>
+  <div id="dashboard" style="display:none">
+    <div class="cards">
+      <div class="card"><div class="num" id="c-views">0</div><div class="lbl">Page Views</div></div>
+      <div class="card"><div class="num" id="c-clicks">0</div><div class="lbl">School Clicks</div></div>
+      <div class="card"><div class="num" id="c-sessions">0</div><div class="lbl">Unique Visitors</div></div>
+    </div>
+    <div class="section">
+      <h2>Most-Clicked Schools</h2>
+      <div id="schools-wrap"><div class="muted">No clicks recorded yet.</div></div>
+    </div>
+    <div class="section">
+      <h2>Views — Last 30 Days</h2>
+      <div id="days-wrap"><div class="muted">No views recorded yet.</div></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// Hidden analytics dashboard. Reads aggregated counts from our Cloudflare
+// Worker (/api/analytics-summary, backed by D1) — raw event rows are NOT exposed.
+const $ = id => document.getElementById(id);
+const fmt = n => (n||0).toLocaleString();
+
+async function load(){
+  const status = $("status");
+  status.style.display = "block";
+  status.classList.remove("err");
+  status.textContent = "Loading analytics…";
+  try{
+    const res = await fetch("/api/analytics-summary");
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const d = await res.json();
+    render(d);
+    status.style.display = "none";
+    $("dashboard").style.display = "block";
+  }catch(e){
+    status.classList.add("err");
+    status.textContent = "Couldn't load analytics: "+e.message;
+  }
+}
+
+function render(d){
+  $("c-views").textContent = fmt(d.total_views);
+  $("c-clicks").textContent = fmt(d.total_clicks);
+  $("c-sessions").textContent = fmt(d.unique_sessions);
+
+  $("since").textContent = d.first_event
+    ? "since "+new Date(d.first_event).toLocaleDateString() : "";
+
+  // Top schools
+  const schools = d.top_schools || [];
+  const sw = $("schools-wrap");
+  if(schools.length){
+    const max = Math.max(...schools.map(s=>s.clicks), 1);
+    let html = '<table><thead><tr><th class="rank">#</th><th>School</th><th class="bar-cell"></th><th style="text-align:right">Clicks</th></tr></thead><tbody>';
+    schools.forEach((s,i)=>{
+      const pct = Math.round((s.clicks/max)*100);
+      html += `<tr><td class="rank">${i+1}</td><td>${esc(s.school)}</td>`
+        + `<td class="bar-cell"><div class="bar-track"><div class="bar" style="width:${pct}%"></div></div></td>`
+        + `<td class="clicks">${fmt(s.clicks)}</td></tr>`;
+    });
+    html += "</tbody></table>";
+    sw.innerHTML = html;
+  } else sw.innerHTML = '<div class="muted">No clicks recorded yet.</div>';
+
+  // Views by day
+  const days = d.views_by_day || [];
+  const dw = $("days-wrap");
+  if(days.length){
+    const max = Math.max(...days.map(x=>x.views), 1);
+    dw.innerHTML = days.map(x=>{
+      const pct = Math.round((x.views/max)*100);
+      return `<div class="day-row"><span class="d">${esc(x.day)}</span>`
+        + `<div class="bar-track"><div class="bar" style="width:${pct}%"></div></div>`
+        + `<span class="v">${fmt(x.views)}</span></div>`;
+    }).join("");
+  } else dw.innerHTML = '<div class="muted">No views recorded yet.</div>';
+}
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+$("refresh").addEventListener("click", load);
+load();
+</script>
+</body>
+</html>

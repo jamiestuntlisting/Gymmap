@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Stunt Training & Specialty Facilities — World Map</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="/fallback-data.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Inter",sans-serif;background:#080808;color:#f0f0f0;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-text-size-adjust:100%;}
+
+/* HEADER */
+header{background:#080808;border-bottom:2px solid #cc0000;padding:7px 18px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:100;}
+.logo{font-family:"Bebas Neue",sans-serif;font-size:24px;letter-spacing:2px;line-height:1;}
+.logo .stunt{color:#fff;}.logo .listing{color:#cc0000;}
+.logo .sub{color:#666;font-size:11px;font-family:"Inter",sans-serif;font-weight:500;letter-spacing:1.5px;display:block;margin-top:1px;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:18px;}
+.search-wrap{position:relative;}
+.search-wrap input{background:#111;border:1px solid #252525;border-radius:3px;color:#eee;font-family:"Inter",sans-serif;font-size:12px;padding:5px 26px 5px 9px;width:180px;outline:none;transition:border-color 0.2s;}
+.search-wrap input:focus{border-color:#cc0000;}
+.search-wrap input::placeholder{color:#3a3a3a;}
+#search-clear{position:absolute;right:7px;top:50%;transform:translateY(-50%);color:#3a3a3a;cursor:pointer;font-size:13px;display:none;line-height:1;}
+#search-clear:hover{color:#cc0000;}
+.stat{text-align:center;line-height:1.2;}
+.stat-num{font-family:"Bebas Neue",sans-serif;font-size:20px;color:#cc0000;}
+.stat-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;}
+
+/* TOOLBAR (dropdowns row) */
+#toolbar{background:#0c0c0c;border-bottom:1px solid #1a1a1a;padding:5px 18px;display:flex;gap:10px;flex-shrink:0;z-index:99;}
+.dd-wrap{display:flex;align-items:center;gap:7px;}
+.dd-label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+select{background:#111;border:1px solid #252525;border-radius:3px;color:#ccc;font-family:"Inter",sans-serif;font-size:12px;padding:4px 24px 4px 8px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color 0.2s;}
+select:focus,select:hover{border-color:#cc0000;color:#fff;}
+select option{background:#111;color:#ccc;}
+.add-school-btn{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:400;display:inline-flex;align-items:center;gap:6px;background:#cc0000;color:#fff;text-decoration:none;border:none;cursor:pointer;font-family:"Inter",sans-serif;font-size:13px;font-weight:600;letter-spacing:0.4px;padding:9px 18px;border-radius:4px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.6);transition:background 0.15s;}
+.add-school-btn:hover{background:#e11414;}
+.popup-more{display:inline-block;margin-top:9px;font-size:11px;color:#cc0000;text-decoration:none;font-weight:600;letter-spacing:.3px;border-top:1px solid #1e1e1e;padding-top:8px;width:100%;}
+.popup-more:hover{color:#ff5252;}
+
+/* Full-screen overlay used for the detail view + submit / claim forms */
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;z-index:1000;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch;}
+#ov.active{display:block;}
+#ov-card{max-width:560px;margin:0 auto;min-height:100%;background:#0b0b0b;border-left:1px solid #1e1e1e;border-right:1px solid #1e1e1e;}
+@media (min-width:600px){#ov{padding:28px 14px;}#ov-card{min-height:auto;border:1px solid #2a2a2a;border-top:3px solid var(--ov-color,#cc0000);border-radius:8px;overflow:hidden;}}
+.ov-head{display:flex;align-items:flex-start;gap:10px;padding:16px 18px;border-bottom:1px solid #161616;position:sticky;top:0;background:#0b0b0b;z-index:2;}
+.ov-head h2{font-family:"Bebas Neue",sans-serif;font-size:24px;letter-spacing:.5px;line-height:1.05;color:#fff;flex:1;}
+.ov-close{font-size:22px;color:#666;cursor:pointer;line-height:1;background:none;border:none;padding:0 4px;}
+.ov-close:hover{color:#cc0000;}
+.ov-body{padding:16px 18px 28px;}
+.ov-type{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+.ov-row{font-size:13px;color:#ccc;margin:8px 0;line-height:1.5;}
+.ov-row b{color:#777;font-weight:500;}
+.ov-sec-title{font-size:10px;color:#cc0000;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin:16px 0 7px;}
+.ov-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.ov-tag{font-size:11px;color:#bbb;background:#161616;border:1px solid #2a2a2a;border-radius:3px;padding:3px 8px;}
+.ov-links{display:flex;flex-direction:column;gap:7px;margin-top:12px;}
+.ov-link{display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-size:13px;padding:9px 12px;border-radius:4px;border:1px solid #1f1f1f;color:#6ab0f5;}
+.ov-link.ig{color:#c97bc9;}
+.ov-link:hover{background:rgba(255,255,255,.05);}
+.ov-claim{display:block;width:100%;margin-top:18px;background:#16110b;border:1px solid #5a431f;color:#f5c265;font-weight:600;font-size:13px;padding:12px;border-radius:5px;cursor:pointer;text-align:center;}
+.ov-claim:hover{background:#221808;color:#ffd98a;}
+.ov-form label{display:block;margin-bottom:12px;}
+.ov-form label > span{display:block;font-size:11px;color:#999;margin-bottom:5px;}
+.ov-form input,.ov-form textarea{width:100%;background:#111;border:1px solid #252525;border-radius:4px;color:#eee;font-family:"Inter",sans-serif;font-size:14px;padding:10px;outline:none;}
+.ov-form input:focus,.ov-form textarea:focus{border-color:#cc0000;}
+.ov-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px 10px;border:1px solid #1f1f1f;border-radius:4px;padding:10px;background:#0a0a0a;max-height:190px;overflow-y:auto;}
+.ov-chk{display:flex;align-items:center;gap:7px;font-size:13px;color:#cfcfcf;cursor:pointer;}
+.ov-chk input{width:auto;}
+.ov-mine{display:flex;align-items:center;gap:8px;font-size:13px;color:#e0c089;background:#16110b;border:1px solid #4a3a1f;border-radius:5px;padding:11px;margin:14px 0;cursor:pointer;}
+.ov-mine input{width:auto;transform:scale(1.2);}
+.ov-submit{width:100%;background:#cc0000;border:none;color:#fff;font-weight:600;font-size:14px;padding:13px;border-radius:5px;cursor:pointer;margin-top:6px;}
+.ov-submit:hover{background:#e11414;}
+.ov-msg{font-size:13px;text-align:center;padding:8px 0;min-height:18px;}
+.ov-msg.err{color:#cc5555;}.ov-msg.ok{color:#7bc67e;}
+.ov-note{font-size:12px;color:#777;line-height:1.5;margin-bottom:14px;}
+#view-toggle{margin-left:auto;background:#111;border:1px solid #252525;color:#ccc;font-family:"Inter",sans-serif;font-size:12px;font-weight:500;padding:5px 12px;border-radius:3px;cursor:pointer;white-space:nowrap;transition:border-color .2s,color .2s;}
+#view-toggle:hover{border-color:#cc0000;color:#fff;}
+#open-gyms-toggle{background:#111;border:1px solid #252525;color:#ccc;font-family:"Inter",sans-serif;font-size:12px;font-weight:500;padding:5px 12px;border-radius:3px;cursor:pointer;white-space:nowrap;transition:border-color .2s,color .2s,background .2s;display:inline-flex;align-items:center;gap:5px;}
+#open-gyms-toggle:hover{border-color:#90a4ae;color:#fff;}
+#open-gyms-toggle.active{background:#90a4ae;border-color:#90a4ae;color:#0c0c0c;font-weight:600;}
+
+/* TABLE / LIST VIEW */
+#table-view{flex:1;overflow:auto;display:none;background:#080808;-webkit-overflow-scrolling:touch;}
+#table-view.active{display:block;}
+#schools-table{width:100%;border-collapse:collapse;font-size:13px;}
+#schools-table th{position:sticky;top:0;background:#0c0c0c;color:#777;text-transform:uppercase;font-size:10px;letter-spacing:1px;text-align:left;padding:10px 12px;border-bottom:1px solid #242424;z-index:1;}
+#schools-table td{padding:10px 12px;border-bottom:1px solid #161616;vertical-align:top;}
+#schools-table tr:hover td{background:rgba(255,255,255,0.03);}
+.tbl-name{color:#fff;font-weight:600;}
+.tbl-type{color:#888;}
+.tbl-addr{color:#aaa;font-size:12px;}
+.tbl-addr .city{color:#555;}
+.tbl-specs{color:#999;font-size:11px;max-width:280px;}
+.tbl-link{color:#6ab0f5;text-decoration:none;margin-right:12px;white-space:nowrap;}
+.tbl-link.ig{color:#c97bc9;}
+.tbl-link:hover{text-decoration:underline;}
+
+/* ONLINE-FACILITIES HUB (mid-Atlantic) */
+.online-hub-label{font-family:"Bebas Neue",sans-serif;fill:#26c6da;letter-spacing:1px;text-anchor:middle;paint-order:stroke;stroke:#080808;stroke-width:3px;}
+
+/* MAP */
+#map-container{flex:1;position:relative;overflow:hidden;cursor:grab;}
+#map-container:active{cursor:grabbing;}
+#map-svg{width:100%;height:100%;display:block;background:#080808;touch-action:none;}
+.school-dot-g{transition:filter 0.12s;}
+.school-dot-g.selected{filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 7px rgba(255,255,255,0.9));}
+.grid-line{stroke:rgba(255,255,255,0.045);stroke-width:0.5;fill:none;vector-effect:non-scaling-stroke;}
+.country{fill:#080808;stroke:rgba(255,255,255,0.6);stroke-width:0.6;stroke-linejoin:round;vector-effect:non-scaling-stroke;}
+.country-border{fill:none;stroke:rgba(255,255,255,0.15);stroke-width:0.5;vector-effect:non-scaling-stroke;}
+
+/* POPUP */
+#popup{position:absolute;background:rgba(6,6,6,0.97);border:1px solid #1e1e1e;border-top:3px solid var(--popup-color,#cc0000);border-radius:0 4px 4px 4px;padding:12px 14px;width:270px;pointer-events:none;z-index:200;display:none;box-shadow:0 6px 28px rgba(0,0,0,0.8);max-height:82vh;overflow-y:auto;}
+#popup.active{display:block;pointer-events:all;}
+.popup-name{font-family:"Bebas Neue",sans-serif;font-size:16px;letter-spacing:0.5px;color:#fff;line-height:1.2;margin-bottom:3px;padding-right:18px;}
+.popup-type{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;}
+.popup-loc{font-size:11px;color:#888;margin-bottom:9px;}
+.popup-links{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.popup-link{display:flex;align-items:center;gap:6px;text-decoration:none;font-size:11px;padding:4px 7px;border-radius:3px;transition:background 0.15s;border:1px solid #1a1a1a;}
+.popup-link:hover{background:rgba(255,255,255,0.05);}
+.popup-link.web{color:#6ab0f5;}.popup-link.ig{color:#c97bc9;}
+.popup-specialties{border-top:1px solid #1e1e1e;padding-top:8px;}
+.popup-spec-title{font-size:10px;color:#cc0000;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:600;}
+.popup-spec-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.popup-spec-tag{font-size:10px;color:#bbb;background:#161616;border:1px solid #2a2a2a;border-radius:3px;padding:2px 6px;}
+#popup-close{position:absolute;top:6px;right:8px;color:#444;cursor:pointer;font-size:14px;line-height:1;pointer-events:all;}
+#popup-close:hover{color:#cc0000;}
+
+/* LEGEND */
+#legend{position:absolute;bottom:16px;left:12px;z-index:100;background:rgba(6,6,6,0.93);border:1px solid #1a1a1a;border-radius:4px;padding:10px 12px;width:215px;}
+.legend-title{font-family:"Bebas Neue",sans-serif;font-size:12px;letter-spacing:2px;color:#cc0000;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid #1a1a1a;}
+.leg-sec-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin:10px 0 5px;padding-top:8px;border-top:1px solid #1f1f1f;}
+.leg-sec-title:first-of-type{margin-top:3px;padding-top:0;border-top:none;}
+.leg-sec-note{font-size:9px;color:#4a4a4a;letter-spacing:.5px;text-transform:none;font-weight:500;}
+/* Facility type is drawn as a ring around each dot, so the key shows a ring */
+.leg-ring{width:11px;height:11px;border-radius:50%;border:2px solid #888;flex-shrink:0;box-sizing:border-box;}
+.leg-exp{color:#555;font-size:9px;padding:0 4px;cursor:pointer;}
+.leg-exp:hover{color:#cc0000;}
+.leg-subs{display:none;margin:1px 0 4px 17px;padding-left:7px;border-left:1px solid #1f1f1f;}
+.leg-subs.open{display:block;}
+.leg-sub{display:flex;align-items:center;gap:6px;padding:2px 3px;border-radius:2px;cursor:pointer;color:#7a7a7a;}
+.leg-sub .leg-name{font-size:10px;color:inherit;}
+.leg-sub:hover{background:rgba(255,255,255,.04);color:#bbb;}
+.leg-sub.on{color:#fff;background:rgba(204,0,0,.22);}
+.leg-item{display:flex;align-items:center;gap:7px;padding:2px 3px;border-radius:2px;cursor:pointer;transition:background 0.12s;}
+.leg-item:hover{background:rgba(255,255,255,0.04);}
+.leg-item.off{opacity:0.28;}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.leg-name{font-size:11px;color:#aaa;flex:1;}
+.leg-count{font-size:10px;color:#444;}
+.leg-btns{display:flex;gap:8px;margin-top:7px;padding-top:6px;border-top:1px solid #1a1a1a;}
+.leg-btn{flex:1;font-size:10px;color:#555;text-align:center;cursor:pointer;letter-spacing:0.5px;padding:2px 0;}
+.leg-btn:hover{color:#cc0000;}
+
+#result-badge{position:absolute;top:10px;right:10px;z-index:100;background:rgba(6,6,6,0.9);border:1px solid #1e1e1e;border-radius:3px;padding:4px 9px;font-size:11px;color:#666;display:none;}
+#result-badge b{color:#cc0000;}
+.zoom-btns{position:absolute;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;gap:4px;}
+.zoom-btn{background:rgba(6,6,6,0.95);border:1px solid #2a2a2a;color:#aaa;width:32px;height:32px;border-radius:3px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color 0.15s,border-color 0.15s;user-select:none;}
+.zoom-btn:hover{color:#fff;border-color:#cc0000;}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#333;font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:3px;z-index:50;}
+
+/* Legend collapse caret — only shown on mobile */
+.legend-caret{display:none;color:#cc0000;font-size:11px;}
+
+/* ─── MOBILE / RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width:760px){
+  /* Header reflows: logo + stats on the top row, search on its own full-width row */
+  header{flex-wrap:wrap;gap:8px 12px;padding:8px 12px;}
+  .logo{font-size:20px;}
+  .logo .sub{font-size:9px;letter-spacing:1px;}
+  .header-right{margin-left:auto;gap:14px;}
+  .stat-num{font-size:16px;}
+  .stat-label{font-size:8px;}
+  .search-wrap{order:5;flex-basis:100%;}
+  .search-wrap input{width:100%;font-size:16px;padding:9px 32px 9px 11px;}
+  #search-clear{font-size:16px;right:11px;}
+
+  /* Toolbar dropdowns stack to two-up / full width and stretch to fill */
+  #toolbar{flex-wrap:wrap;padding:7px 12px;gap:8px;}
+  .dd-wrap{flex:1 1 calc(50% - 5px);gap:6px;}
+  .dd-label{font-size:10px;}
+  select{flex:1;min-width:0;font-size:16px;padding:8px 26px 8px 9px;}
+  #view-toggle{padding:8px 14px;font-size:13px;}
+  #schools-table{font-size:12px;}
+  #schools-table th,#schools-table td{padding:8px 9px;}
+  .add-school-btn{bottom:calc(14px + env(safe-area-inset-bottom));padding:11px 20px;font-size:14px;}
+
+  /* Legend becomes a tappable, collapsible panel so it doesn't cover the map */
+  #legend{bottom:12px;left:8px;width:172px;max-width:54vw;padding:8px 10px;max-height:46vh;overflow-y:auto;}
+  #legend.collapsed{width:auto;}
+  .legend-title{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:0;padding-bottom:0;border-bottom:none;}
+  #legend:not(.collapsed) .legend-title{margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid #1a1a1a;}
+  #legend.collapsed .leg-item,#legend.collapsed .leg-btns{display:none;}
+  .legend-caret{display:inline;transition:transform 0.2s;}
+  #legend.collapsed .legend-caret{transform:rotate(-90deg);}
+  .leg-item{padding:4px 3px;}
+  .leg-name{font-size:11px;}
+
+  /* Popup turns into a bottom sheet (mouse-coordinate positioning is overridden) */
+  #popup{left:0!important;right:0;top:auto!important;bottom:0;width:100%!important;max-width:100%;
+    max-height:64vh;border-radius:14px 14px 0 0;border-left:none;border-right:none;border-bottom:none;
+    border-top:3px solid var(--popup-color,#cc0000);padding:16px 16px calc(22px + env(safe-area-inset-bottom));
+    box-shadow:0 -8px 30px rgba(0,0,0,0.85);}
+  .popup-name{font-size:19px;padding-right:30px;}
+  .popup-loc{font-size:12px;}
+  .popup-link{padding:9px 11px;font-size:13px;}
+  .popup-spec-tag{font-size:11px;padding:3px 8px;}
+  #popup-close{font-size:22px;top:10px;right:14px;padding:2px 4px;}
+
+  /* Bigger, thumb-friendly map controls */
+  .zoom-btns{bottom:14px;right:14px;gap:6px;}
+  .zoom-btn{width:40px;height:40px;font-size:23px;}
+  #result-badge{top:8px;right:8px;font-size:10px;}
+}
+@media (max-width:360px){
+  .logo .sub{display:none;}
+  .header-right{gap:10px;}
+  .dd-wrap{flex-basis:100%;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div><span class="stunt">STUNT</span><span class="listing">LISTING</span></div>
+    <span class="sub">Training &amp; Specialty Facilities</span>
+  </div>
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="Search facility, specialty…">
+    <span id="search-clear">✕</span>
+  </div>
+  <div class="header-right">
+    <div class="stat"><div class="stat-num" id="stat-schools">156</div><div class="stat-label">Facilities</div></div>
+    <div class="stat"><div class="stat-num">25+</div><div class="stat-label">Countries</div></div>
+    <div class="stat"><div class="stat-num">50</div><div class="stat-label">Specialties</div></div>
+  </div>
+</header>
+
+<div id="toolbar">
+  <div class="dd-wrap">
+    <span class="dd-label">Specialty:</span>
+    <select id="spec-filter"><option value="">All Specialties</option></select>
+  </div>
+  <button id="open-gyms-toggle" type="button" title="Show only open gyms with stunt training">🤸 Open Gyms</button>
+  <button id="view-toggle" type="button">▤ List view</button>
+</div>
+
+<div id="map-container">
+  <svg id="map-svg"></svg>
+  <div id="loading">LOADING MAP…</div>
+  <div id="popup" onmouseenter="clearTimeout(window._popupHideTimer)" onmouseleave="popup.classList.remove('active')">
+    <span id="popup-close">✕</span>
+    <div class="popup-name" id="pc-name"></div>
+    <div class="popup-type" id="pc-type"></div>
+    <div class="popup-loc" id="pc-loc"></div>
+    <div class="popup-links" id="pc-links"></div>
+    <div class="popup-specialties" id="pc-specs"></div>
+    <a class="popup-more" id="pc-more" href="#">View full details →</a>
+  </div>
+  <div id="legend"></div>
+  <div id="result-badge">Showing <b id="rc">0</b> facilities</div>
+  <button class="add-school-btn" id="add-school-btn" type="button">+ Add a facility</button>
+  <div class="zoom-btns">
+    <div class="zoom-btn" id="zoom-in">+</div>
+    <div class="zoom-btn" id="zoom-out">−</div>
+  </div>
+</div>
+
+<div id="table-view">
+  <table id="schools-table">
+    <thead><tr><th>Facility</th><th>Type</th><th>Location</th><th>Address</th><th>Specialties</th><th>Links</th></tr></thead>
+    <tbody id="schools-tbody"></tbody>
+  </table>
+</div>
+
+<!-- Full-screen overlay: school detail view + add-school / claim forms -->
+<div id="ov">
+  <div id="ov-card">
+    <div class="ov-head">
+      <h2 id="ov-title"></h2>
+      <button class="ov-close" id="ov-close" aria-label="Close">✕</button>
+    </div>
+    <div class="ov-body" id="ov-body"></div>
+  </div>
+</div>
+
+<script>
+// ── ANALYTICS (privacy-light: anonymous counts only, no IPs / personal data) ──
+// Events go to our own Cloudflare Worker (/api/track) backed by D1.
+let _sessionId;
+try {
+  _sessionId = localStorage.getItem("sl_sid");
+  if(!_sessionId){ _sessionId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(36).slice(2)); localStorage.setItem("sl_sid", _sessionId); }
+} catch(e){ _sessionId = "anon"; }
+function track(type, school){
+  try{
+    fetch("/api/track", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ type:type, school: school||null, session_id:_sessionId }),
+      keepalive:true
+    }).catch(()=>{});
+  }catch(e){}
+}
+track("view");
+
+// Offline fallback dataset (see fallback-data.js); replaced by the live API on load.
+let SCHOOLS = window.FALLBACK_SCHOOLS || [];
+
+const ALL_SPECIALTIES = ["Aerial", "Aerial (Lyra)", "Aerial (Silks)", "Aerial (Straps)", "Air Ram", "Balintawak", "Boxing", "Brazilian Jiu-Jitsu", "Business Dynamics", "Capoeira", "Car Hits", "Creature Performance", "Drifting", "Fight Choreography", "Filipino Martial Arts", "Fire Burns", "Firearms", "Gunshot Reactions", "High Falls", "Horse Stunts", "Karate", "Kickboxing", "Krav Maga", "Kung Fu", "MMA", "Martial Arts", "Mini Tramp", "Motion Capture", "Motocross", "Motorcycle Stunts", "Muay Thai", "Open Gym", "Parkour", "Previs", "Private Training", "Rally", "Rappelling", "Rescue Training", "Rigging", "Screen Combat", "Stage Combat", "Stair Falls", "Stunt Driving", "Swords", "Tactical Movement", "Taekwondo", "Tumbling", "Weapons", "Window Penetrations", "Wirework", "Wrestling"];
+
+// A facility is exactly ONE type (the colored RING around each dot); the pie
+// slices inside the ring are the training disciplines it offers. Facility-type
+// counts therefore add up to the total, while training counts can overlap.
+const FACILITY_TYPES = ["Stunt School", "Stunt Training Facility", "Open Gym"];
+const FACILITY_COLORS = {
+  "Stunt School":            "#ff3b3b",
+  "Stunt Training Facility": "#ffd23f",
+  "Open Gym":                "#35d07f",
+};
+const COLORS = {
+  "Fight Choreography":         "#e91e8c",
+  "Wirework, Rigging & Aerial": "#00d4d4",
+  "Driving & Motorsports":      "#f5a623",
+  "Firearms & Tactical":        "#d4a017",
+  "Fire Burns":                 "#ff6b35",
+  "Parkour":                    "#b0f045",
+  "Motion Capture & Previs":    "#26c6da",
+  "Horse Stunts":               "#a1887f",
+};
+// Each training discipline expands into the specialties that belong to it, so
+// "Fight Choreography" can be narrowed to just Stage Combat, just Swords, etc.
+const SUB_SPECIALTIES = {
+  "Fight Choreography": ["Fight Choreography","Screen Combat","Stage Combat","Martial Arts","Swords","Weapons","Boxing","MMA","Muay Thai","Kickboxing","Karate","Kung Fu","Taekwondo","Krav Maga","Brazilian Jiu-Jitsu","Filipino Martial Arts","Balintawak","Capoeira","Wrestling","Creature Performance"],
+  "Wirework, Rigging & Aerial": ["Wirework","Rigging","Aerial","Aerial (Lyra)","Aerial (Silks)","Aerial (Straps)","High Falls","Stair Falls","Air Ram","Mini Tramp","Rappelling","Rescue Training","Window Penetrations"],
+  "Driving & Motorsports": ["Stunt Driving","Motorcycle Stunts","Drifting","Rally","Motocross","Car Hits"],
+  "Firearms & Tactical": ["Firearms","Tactical Movement","Gunshot Reactions"],
+  "Fire Burns": ["Fire Burns"],
+  "Parkour": ["Parkour","Tumbling"],
+  "Motion Capture & Previs": ["Motion Capture","Previs"],
+  "Horse Stunts": ["Horse Stunts"],
+};
+
+// Older records may still carry earlier category names — normalize on load.
+const CAT_MAP = {
+  "Combat":"Fight Choreography", "Martial Arts":"Fight Choreography",
+  "Screen / Stage Combat":"Fight Choreography", "Weapons & Swords":"Fight Choreography",
+  "Wirework & Aerial":"Wirework, Rigging & Aerial", "Rescue Training":"Wirework, Rigging & Aerial",
+  "Fire Burns & Pyrotechnics":"Fire Burns", "Stunt Gym":null,
+  "General":null, "Edited Demo Reel":null, "Kids Programs":null,
+  "Stunt School":null, "Stunt Training Facility":null, "Open Gym":null,
+};
+function normalizeCategories(s){
+  // Derive the facility type if the record predates the facility_type field.
+  if(!s.facility_type){
+    const c = s.categories||[], sp = s.specialties||[];
+    s.facility_type = c.includes("Stunt School") ? "Stunt School"
+      : (c.includes("Open Gym")||sp.includes("Open Gym")) ? "Open Gym"
+      : "Stunt Training Facility";
+  }
+  if(!FACILITY_COLORS[s.facility_type]) s.facility_type = "Stunt Training Facility";
+  const out = [];
+  (s.categories||[]).forEach(c=>{
+    const m = Object.prototype.hasOwnProperty.call(CAT_MAP,c) ? CAT_MAP[c] : c;
+    if(m && COLORS[m] && !out.includes(m)) out.push(m);
+  });
+  s.categories = out;
+  return s;
+}
+
+// Populate specialty dropdown
+const specSel = document.getElementById("spec-filter");
+ALL_SPECIALTIES.forEach(s => {
+  const o = document.createElement("option"); o.value = s; o.textContent = s;
+  specSel.appendChild(o);
+});
+
+// ── MAP SETUP ─────────────────────────────────────────────────────────────────
+const svg = d3.select("#map-svg");
+const container = document.getElementById("map-container");
+const popup = document.getElementById("popup");
+// True only on devices with a real hover-capable pointer (desktop mouse). Touch
+// devices fall back to tap interactions so popups don't flash open/closed.
+const HOVER_OK = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+let W = container.clientWidth, H = container.clientHeight;
+svg.attr("width", W).attr("height", H);
+
+// Equirectangular — a simple cylindrical projection so the world tiles
+// seamlessly side-to-side. At base scale the whole world is exactly W wide
+// (lon -180..180 maps to x 0..W), which lets us wrap horizontally by drawing
+// identical copies one world-width to the left and right.
+const projection = d3.geoEquirectangular();
+function fitProjection(){ projection.scale(W/(2*Math.PI)).translate([W/2, H/2]); }
+fitProjection();
+const pathGen = d3.geoPath().projection(projection);
+
+// Keep the map from being dragged off the top/bottom into empty space. When the
+// world is taller than the viewport we clamp to its edges; when it's shorter we
+// lock it vertically centred. Horizontal (x) is left free so it can wrap.
+function clampY(t){
+  const k=t.k, pyT=H/2-W/4, pyB=H/2+W/4;        // screen y of lat +90 / -90 at base
+  if(k*(W/2) >= H) return Math.max(H - k*pyB, Math.min(-k*pyT, t.y));
+  return (H - k*(pyT+pyB))/2;                    // world shorter than viewport → centre
+}
+
+const zoom = d3.zoom()
+  .scaleExtent([1,600])                           // k=1 = whole world fills the width; deep zoom to separate dense city clusters
+  .constrain(t => d3.zoomIdentity.translate(t.x, clampY(t)).scale(t.k))
+  .on("zoom", ev => {
+    const t = ev.transform, k = t.k;
+    curK = k;
+    const worldW = W * k;
+    let wx = t.x % worldW; if(wx > 0) wx -= worldW;   // wrap pan into (-worldW, 0]
+    g.attr("transform", `translate(${wx},${t.y}) scale(${k})`);
+    dotGroup.selectAll(".school-dot-g").each(function(d) {
+      if(visibleSchools.has(d)) d3.select(this).attr("transform", `translate(${cx(d)},${cy(d)}) scale(${dotScale(k)})`);
+    });
+    positionOnlineHub();
+  });
+svg.call(zoom);
+
+const g = svg.append("g");
+// All geometry lives in one referenced group so we can clone it left/right for
+// the horizontal wrap via <use>. The clones are visual-only (pointer-events
+// off) — interaction always happens on the real, centred copy.
+const worldContent = g.append("g").attr("id","world-content");
+const gridG = worldContent.append("g");
+const countryG = worldContent.append("g");
+const cloneL = g.append("use").attr("href","#world-content").attr("xlink:href","#world-content").style("pointer-events","none");
+const cloneR = g.append("use").attr("href","#world-content").attr("xlink:href","#world-content").style("pointer-events","none");
+// Dots sit ABOVE the country clones and are drawn as real elements in three
+// horizontal copies (offsets -W / 0 / +W) so every visible pin stays clickable
+// no matter how far the map is wrapped — unlike the <use> clones below them.
+const DOT_OFFSETS = [-1, 0, 1];
+const dotGroup = g.append("g");
+function positionClones(){
+  cloneL.attr("x", -W); cloneR.attr("x", W);
+  dotGroup.selectAll(".dot-layer").attr("transform", function(){ return `translate(${(this.__m||0)*W},0)`; });
+}
+positionClones();
+
+for(let lon=-180;lon<=180;lon+=30)
+  gridG.append("path").datum({type:"LineString",coordinates:[[lon,-85],[lon,85]]}).attr("class","grid-line").attr("d",pathGen);
+for(let lat=-60;lat<=75;lat+=30)
+  gridG.append("path").datum({type:"LineString",coordinates:[[-180,lat],[180,lat]]}).attr("class","grid-line").attr("d",pathGen);
+
+// Online-only facilities collect at an "internet" hub in the mid-Atlantic,
+// between the Americas and Europe.
+// Any school flagged online:true (or region "Online") is positioned here.
+const ONLINE_HUB = {lon:-40, lat:36};
+function isOnline(s){ return s.online === true || s.region === "Online" || s.location === "Online"; }
+function baseLatLon(s){ return isOnline(s) ? [ONLINE_HUB.lat, ONLINE_HUB.lon] : [s.lat, s.lon]; }
+
+// Jitter
+let locMap={}, onlineList=[];
+function buildLocMap(){
+  locMap={};
+  SCHOOLS.forEach(s=>{const[la,lo]=baseLatLon(s);const k=la+","+lo;if(!locMap[k])locMap[k]=[];locMap[k].push(s);});
+  onlineList = SCHOOLS.filter(isOnline);
+}
+buildLocMap();
+function jittered(s){
+  const[la,lo]=baseLatLon(s);
+  const k=la+","+lo,grp=locMap[k],i=grp.indexOf(s),n=grp.length;
+  if(n===1)return[lo,la];
+  const a=(2*Math.PI*i)/n,r=Math.min(0.3*n,1.5);
+  return[lo+r*Math.cos(a),la+r*Math.sin(a)];
+}
+
+// Online-only facilities orbit the hub like electrons: evenly spaced on rings
+// that sit outside the globe glyph. Radii are expressed in the hub's own local
+// units, so the orbit keeps its size on screen at every zoom level (the faint
+// orbit rings drawn in drawOnlineHub use the same numbers and line up exactly).
+const ORBIT_R0 = 42, ORBIT_STEP = 20, ORBIT_PER_RING = 9;
+let curK = 1;   // latest zoom scale, kept in sync by the zoom/resize handlers
+function orbitRings(n){ return Math.max(1, Math.ceil(n / ORBIT_PER_RING)); }
+function orbitOffset(i, n){
+  const ring = Math.floor(i / ORBIT_PER_RING);
+  const inRing = i % ORBIT_PER_RING;
+  const ringN = Math.min(n - ring*ORBIT_PER_RING, ORBIT_PER_RING);
+  // Stagger alternate rings so electrons don't line up radially
+  const a = (2*Math.PI*inRing)/ringN - Math.PI/2 + (ring % 2 ? Math.PI/ringN : 0);
+  const r = (ORBIT_R0 + ring*ORBIT_STEP) * dotScale(curK);
+  return [r*Math.cos(a), r*Math.sin(a)];
+}
+function projected(s){
+  if(isOnline(s)){
+    const p = projection([ONLINE_HUB.lon, ONLINE_HUB.lat]);
+    if(!p) return null;
+    const i = onlineList.indexOf(s);
+    if(i < 0) return p;
+    const [dx,dy] = orbitOffset(i, onlineList.length);
+    return [p[0]+dx, p[1]+dy];
+  }
+  const [lo,la] = jittered(s);
+  return projection([lo,la]);
+}
+function cx(s){const p=projected(s);return p?p[0]:-9999;}
+function cy(s){const p=projected(s);return p?p[1]:-9999;}
+
+// ── FILTER STATE ──────────────────────────────────────────────────────────────
+const activeCategories = new Set(Object.keys(COLORS));
+const activeFacilityTypes = new Set(FACILITY_TYPES);
+let currentSubSpec = "";   // drill-down inside one training discipline
+let visibleSchools = new Set(SCHOOLS);
+let currentSearch = "", currentSpec = "", currentLoc = "";
+let openGymsOnly = false; // "Open Gyms" toolbar toggle — only schools tagged with the "Open Gym" specialty
+let selectedSchool = null; // pin currently clicked — gets a glow highlight
+let popupSchool = null;    // school shown in the hover/tap popup (for "view full details")
+function markSelected(){ dotGroup.selectAll(".school-dot-g").classed("selected", d => d === selectedSchool); }
+let tableMode = false;     // map view vs list/table view
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// Shared filter predicate (search + specialty + legend categories), used by both
+// the map render and the table view.
+function schoolMatches(d){
+  const q = currentSearch.toLowerCase();
+  const matchQ = !q || d.name.toLowerCase().includes(q)
+    || d.type.toLowerCase().includes(q)
+    || (d.specialties && d.specialties.some(s=>s.toLowerCase().includes(q)))
+    || (d.location && d.location.toLowerCase().includes(q))
+    || (d.address && d.address.toLowerCase().includes(q));
+  const matchSpec = !currentSpec || (d.specialties && d.specialties.some(s=>s===currentSpec));
+  const matchSub  = !currentSubSpec || (d.specialties && d.specialties.some(s=>s===currentSubSpec));
+  const matchType = activeFacilityTypes.has(d.facility_type);
+  // A facility with no training tags still shows as long as its type is on.
+  const matchCat = !d.categories.length || d.categories.some(c => activeCategories.has(c));
+  const matchGym = !openGymsOnly || d.facility_type === "Open Gym";
+  return matchQ && matchSpec && matchSub && matchType && matchCat && matchGym;
+}
+
+function igUrl(h){ return "https://instagram.com/"+h.trim().replace(/^@/,"").replace(/\s+/g,""); }
+
+function renderTable(){
+  const tb = document.getElementById("schools-tbody");
+  const rows = SCHOOLS.filter(schoolMatches).sort((a,b)=>a.name.localeCompare(b.name)).map(d=>{
+    let links = "";
+    if(d.website)   links += `<a class="tbl-link" href="${esc(d.website)}" target="_blank" rel="noopener">Website ↗</a>`;
+    if(d.instagram) links += `<a class="tbl-link ig" href="${esc(igUrl(d.instagram))}" target="_blank" rel="noopener">Instagram ↗</a>`;
+    const addr = d.address ? esc(d.address) : `<span class="city">${esc(d.location||"")}</span>`;
+    return `<tr><td class="tbl-name">${esc(d.name)}</td><td class="tbl-type">${esc(d.type)}</td>`
+      + `<td>${esc(d.location||"")}</td><td class="tbl-addr">${addr}</td>`
+      + `<td class="tbl-specs">${esc((d.specialties||[]).join(", "))}</td><td>${links||""}</td></tr>`;
+  });
+  tb.innerHTML = rows.join("") || `<tr><td colspan="6" style="color:#555;padding:24px">No facilities match the current filters.</td></tr>`;
+}
+
+// ── ONLINE-FACILITIES HUB (mid-Atlantic) ─────────────────────────────────────
+let onlineHubG = null;
+function hubXY(){ return projection([ONLINE_HUB.lon, ONLINE_HUB.lat]); }
+function positionOnlineHub(){
+  if(!onlineHubG) return;
+  const [hx,hy]=hubXY(), k=d3.zoomTransform(svg.node()).k;
+  onlineHubG.attr("transform",`translate(${hx},${hy}) scale(${dotScale(k)})`);
+}
+function drawOnlineHub(){
+  onlineHubG = worldContent.append("g").attr("class","online-hub").style("cursor","pointer");
+  // Faint orbit shells — the online facilities sit on these like electrons
+  const rings = orbitRings(SCHOOLS.filter(isOnline).length);
+  for(let i=0;i<rings;i++){
+    onlineHubG.append("circle").attr("r", ORBIT_R0 + i*ORBIT_STEP).attr("fill","none")
+      .attr("stroke","#26c6da").attr("stroke-opacity",0.28)
+      .attr("stroke-width",0.9).attr("stroke-dasharray","3 4").style("pointer-events","none");
+  }
+  onlineHubG.append("circle").attr("r",22).attr("fill","#08222a").attr("stroke","#26c6da").attr("stroke-width",2);
+  const gl = onlineHubG.append("g"); // simple globe / internet glyph
+  gl.append("circle").attr("r",12).attr("fill","none").attr("stroke","#26c6da").attr("stroke-width",1.6);
+  gl.append("line").attr("x1",-12).attr("y1",0).attr("x2",12).attr("y2",0).attr("stroke","#26c6da").attr("stroke-width",1.2);
+  gl.append("ellipse").attr("rx",5).attr("ry",12).attr("fill","none").attr("stroke","#26c6da").attr("stroke-width",1.2);
+  const labelY = ORBIT_R0 + orbitRings(SCHOOLS.filter(isOnline).length-1)*ORBIT_STEP + 20;
+  onlineHubG.append("text").attr("class","online-hub-label").attr("y",labelY).attr("font-size","15px").text("ONLINE");
+  onlineHubG.on("click",(ev)=>{ ev.stopPropagation(); track("click","[Online Hub]"); showOnlineHubPopup(ev); });
+  positionOnlineHub();
+}
+function showOnlineHubPopup(ev){
+  const online = SCHOOLS.filter(isOnline);
+  popup.style.setProperty("--popup-color","#26c6da");
+  document.getElementById("pc-name").textContent = "Online-Only Facilities";
+  document.getElementById("pc-type").textContent = "Remote / Virtual Training";
+  document.getElementById("pc-loc").textContent = "🌐 Internet";
+  document.getElementById("pc-links").innerHTML = "";
+  document.getElementById("pc-more").style.display = "none";
+  const specsEl = document.getElementById("pc-specs");
+  if(online.length){
+    specsEl.innerHTML = `<div class="popup-spec-title">Facilities</div><div class="popup-spec-tags">${online.map(s=>`<span class="popup-spec-tag">${esc(s.name)}</span>`).join("")}</div>`;
+  } else {
+    specsEl.innerHTML = `<div class="popup-spec-title">Online facilities</div><div style="font-size:11px;color:#999;line-height:1.5">No online-only facilities listed here yet — use “Add a facility” to submit one and it'll appear at this hub.</div>`;
+  }
+  const rect=container.getBoundingClientRect();
+  let x=ev.clientX-rect.left+16, y=ev.clientY-rect.top-14;
+  if(x+280>W) x=ev.clientX-rect.left-282;
+  if(y<0) y=4;
+  popup.style.left=x+"px"; popup.style.top=y+"px";
+  popup.classList.add("active");
+}
+
+// ── PIE DOT DRAWING ───────────────────────────────────────────────────────────
+const R = 5; // base radius
+// Dots hold ~constant screen size but grow a little as you zoom in (capped),
+// so a zoomed-in view reads bigger without the runaway overlap of full scaling.
+const DOT_GROW = 0.2;
+function dotScale(k){ return Math.min(Math.pow(k, DOT_GROW), 1.9) / k; }
+
+function drawPieDot(g, school, overrideColor) {
+  g.selectAll("*").remove();
+  const cats = school.categories.filter(c => COLORS[c]);
+
+  if (overrideColor) {
+    // Single solid color
+    g.append("circle").attr("r", R).attr("fill", overrideColor)
+      .attr("stroke","rgba(0,0,0,0.55)").attr("stroke-width",1);
+  } else if (cats.length <= 1) {
+    const col = cats.length === 1 ? (COLORS[cats[0]]||"#888") : "#555";
+    g.append("circle").attr("r", R).attr("fill", col)
+      .attr("stroke","rgba(0,0,0,0.55)").attr("stroke-width",1);
+  } else {
+    // Pie slices — one per training discipline
+    const arc = d3.arc().innerRadius(0).outerRadius(R);
+    const pie = d3.pie().sort(null).value(1)(cats);
+    pie.forEach(slice => {
+      g.append("path").attr("d", arc(slice))
+        .attr("fill", COLORS[slice.data]||"#888")
+        .attr("stroke","rgba(0,0,0,0.4)").attr("stroke-width",0.5);
+    });
+  }
+  // Facility type = a colored ring around the pie (red school / amber training
+  // facility / green open gym). Every facility has exactly one.
+  const ringCol = FACILITY_COLORS[school.facility_type] || FACILITY_COLORS["Stunt Training Facility"];
+  g.append("circle").attr("r", R + 2.1).attr("fill","none")
+    .attr("stroke", ringCol).attr("stroke-width", 1.9);
+  // Transparent hit area on top — enlarges the tap target for touch devices
+  g.append("circle").attr("r", R + 6).attr("fill", "transparent").style("pointer-events", "all");
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderDots() {
+  dotGroup.selectAll("*").remove();
+  const k = d3.zoomTransform(svg.node()).k;
+  curK = k;
+
+  // One real, interactive copy of every dot per horizontal world (for the wrap)
+  DOT_OFFSETS.forEach(m => {
+    const layer = dotGroup.append("g").attr("class","dot-layer").attr("transform",`translate(${m*W},0)`);
+    layer.node().__m = m;
+    layer.selectAll(".school-dot-g")
+      .data(SCHOOLS).enter().append("g")
+      .attr("class","school-dot-g")
+      .attr("transform", d=>`translate(${cx(d)},${cy(d)}) scale(${dotScale(k)})`)
+      .style("cursor","pointer")
+      .each(function(d){ drawPieDot(d3.select(this), d, null); })
+      .on("click",(ev,d)=>{ev.stopPropagation();track("click",d.name);selectedSchool=d;markSelected();showPopup(d,ev);})
+      .on("mouseenter",function(ev,d){
+        if(!HOVER_OK) return; // touch devices use tap (click) instead
+        if(visibleSchools.has(d)){
+          d3.select(this).select("circle,path").attr("opacity",0.85);
+          showPopup(d,ev);
+        }
+      })
+      .on("mouseleave",function(){
+        if(!HOVER_OK) return; // don't auto-hide on touch — keep popup open until tap-away/close
+        d3.select(this).selectAll("circle,path").attr("opacity",1);
+        window._popupHideTimer=setTimeout(()=>{if(!popup.matches(":hover"))popup.classList.remove("active");},220);
+      });
+  });
+
+  applyFilters();
+}
+
+// ── APPLY FILTERS ─────────────────────────────────────────────────────────────
+function applyFilters() {
+  const q = currentSearch.toLowerCase();
+  const spec = currentSpec;
+  const loc = currentLoc;
+  const catFilter = [...activeCategories]; // legend filter
+  // Are we in "single category" mode? (exactly one legend cat active)
+  const singleCat = catFilter.length === 1 ? catFilter[0] : null;
+
+  visibleSchools.clear();
+
+  dotGroup.selectAll(".school-dot-g").each(function(d){
+    // Search match
+    const matchQ = !q || d.name.toLowerCase().includes(q)
+      || d.type.toLowerCase().includes(q)
+      || (d.specialties && d.specialties.some(s=>s.toLowerCase().includes(q)))
+      || d.location.toLowerCase().includes(q);
+
+    // Specialty dropdown match
+    const matchSpec = !spec || (d.specialties && d.specialties.some(s=>s===spec));
+
+    // Location dropdown match
+    const matchLoc = !loc || d.region === loc;
+
+    // Legend matches: facility type (exclusive) + training disciplines
+    const matchType = activeFacilityTypes.has(d.facility_type);
+    const matchCat = !d.categories.length || d.categories.some(c => activeCategories.has(c));
+    const matchSub = !currentSubSpec || (d.specialties && d.specialties.some(s=>s===currentSubSpec));
+
+    // "Open Gyms" toggle — facilities whose type is Open Gym
+    const matchGym = !openGymsOnly || d.facility_type === "Open Gym";
+
+    const show = matchQ && matchSpec && matchLoc && matchType && matchCat && matchSub && matchGym;
+
+    if(show){ visibleSchools.add(d); }
+
+    const el = d3.select(this);
+    el.style("display", show ? null : "none");
+
+    // Redraw dot color
+    if(show) {
+      if(singleCat && d.categories.includes(singleCat)) {
+        // Single legend category selected — solid color
+        drawPieDot(el, d, COLORS[singleCat]);
+      } else if(spec) {
+        // Specialty filter active — use first matching category color
+        const matchingCat = d.categories.find(c=>COLORS[c]) || null;
+        drawPieDot(el, d, matchingCat ? COLORS[matchingCat] : "#888");
+      } else {
+        // Default — full pie
+        drawPieDot(el, d, null);
+      }
+    }
+  });
+
+  const badge = document.getElementById("result-badge");
+  const isFiltered = q||spec||loc||openGymsOnly||currentSubSpec
+    ||catFilter.length<Object.keys(COLORS).length
+    ||activeFacilityTypes.size<FACILITY_TYPES.length;
+  if(isFiltered){badge.style.display="block";document.getElementById("rc").textContent=visibleSchools.size;}
+  else badge.style.display="none";
+
+  if(tableMode) renderTable();
+}
+
+// ── POPUP ─────────────────────────────────────────────────────────────────────
+function showPopup(d, ev) {
+  popupSchool = d;
+  document.getElementById("pc-more").style.display = "";
+  const firstCat = d.categories.find(c=>COLORS[c]);
+  const color = firstCat ? COLORS[firstCat] : "#cc0000";
+  popup.style.setProperty("--popup-color", color);
+  document.getElementById("pc-name").textContent = d.name;
+  document.getElementById("pc-type").textContent = d.type;
+  document.getElementById("pc-loc").textContent = "📍 "+(d.address || d.location);
+
+  const linksEl = document.getElementById("pc-links");
+  linksEl.innerHTML = "";
+  if(d.website){
+    const a=document.createElement("a");a.className="popup-link web";a.href=d.website;a.target="_blank";a.rel="noopener";
+    a.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg> Visit Website`;
+    linksEl.appendChild(a);
+  }
+  if(d.instagram){
+    const h=d.instagram.trim().replace(/^@/,"").replace(/\s+/g,"");
+    const a=document.createElement("a");a.className="popup-link ig";a.href="https://instagram.com/"+h;a.target="_blank";a.rel="noopener";
+    a.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> ${d.instagram}`;
+    linksEl.appendChild(a);
+  }
+
+  const specsEl = document.getElementById("pc-specs");
+  specsEl.innerHTML = "";
+  if(d.specialties && d.specialties.length>0){
+    specsEl.innerHTML=`<div class="popup-spec-title">Specialties</div><div class="popup-spec-tags">${d.specialties.map(s=>`<span class="popup-spec-tag">${s}</span>`).join("")}</div>`;
+  }
+
+  const rect=container.getBoundingClientRect();
+  let x=ev.clientX-rect.left+16,y=ev.clientY-rect.top-14;
+  if(x+280>W)x=ev.clientX-rect.left-282;
+  if(y+220>H)y=ev.clientY-rect.top-222;
+  if(y<0)y=4;
+  popup.style.left=x+"px";popup.style.top=y+"px";
+  popup.classList.add("active");
+}
+
+document.getElementById("popup-close").addEventListener("click",()=>{popup.classList.remove("active");selectedSchool=null;markSelected();});
+svg.on("click",()=>{popup.classList.remove("active");selectedSchool=null;markSelected();});
+
+// ── LEGEND ────────────────────────────────────────────────────────────────────
+const legendEl = document.getElementById("legend");
+const mqMobile = window.matchMedia("(max-width:760px)");
+// Rebuilt whenever the school data changes (counts reflect the live dataset).
+function buildLegend(){
+  legendEl.innerHTML=`<div class="legend-title" id="legend-title">MAP KEY<span class="legend-caret">▾</span></div>`;
+
+  const typeCounts={}, catCounts={}, specCounts={};
+  SCHOOLS.forEach(s=>{
+    typeCounts[s.facility_type]=(typeCounts[s.facility_type]||0)+1;
+    (s.categories||[]).forEach(c=>{catCounts[c]=(catCounts[c]||0)+1;});
+    (s.specialties||[]).forEach(sp=>{specCounts[sp]=(specCounts[sp]||0)+1;});
+  });
+
+  const section=(title,note)=>{
+    const t=document.createElement("div");
+    t.className="leg-sec-title";
+    t.innerHTML=`${title}${note?`<span class="leg-sec-note">${note}</span>`:""}`;
+    legendEl.appendChild(t);
+    return t;
+  };
+
+  // ── Box 1: facility type — every facility is exactly one, so these sum to the total
+  section("Facility Type", SCHOOLS.length);
+  FACILITY_TYPES.forEach(t=>{
+    if(!typeCounts[t]) return;
+    const item=document.createElement("div");
+    item.className="leg-item"+(activeFacilityTypes.has(t)?"":" off");
+    item.innerHTML=`<div class="leg-ring" style="border-color:${FACILITY_COLORS[t]}"></div>`
+      +`<div class="leg-name">${t}</div><div class="leg-count">${typeCounts[t]}</div>`;
+    item.addEventListener("click",()=>{
+      if(activeFacilityTypes.has(t)){activeFacilityTypes.delete(t);item.classList.add("off");}
+      else{activeFacilityTypes.add(t);item.classList.remove("off");}
+      applyFilters();
+    });
+    legendEl.appendChild(item);
+  });
+
+  // ── Box 2: training — a facility can offer several, so these overlap
+  section("Training", "tap to refine");
+  Object.keys(COLORS).forEach(cat=>{
+    if(!catCounts[cat]) return;
+    const wrap=document.createElement("div");
+    const item=document.createElement("div");
+    item.className="leg-item"+(activeCategories.has(cat)?"":" off");
+    const subs=(SUB_SPECIALTIES[cat]||[]).filter(sp=>specCounts[sp]);
+    item.innerHTML=`<div class="leg-dot" style="background:${COLORS[cat]}"></div>`
+      +`<div class="leg-name">${cat}</div>`
+      +(subs.length>1?`<span class="leg-exp">▸</span>`:"")
+      +`<div class="leg-count">${catCounts[cat]}</div>`;
+    wrap.appendChild(item);
+
+    // Drill-down: filter to one specialty inside this discipline
+    let subBox=null;
+    if(subs.length>1){
+      subBox=document.createElement("div");
+      subBox.className="leg-subs";
+      subs.forEach(sp=>{
+        const si=document.createElement("div");
+        si.className="leg-sub"+(currentSubSpec===sp?" on":"");
+        si.innerHTML=`<div class="leg-name">${sp}</div><div class="leg-count">${specCounts[sp]}</div>`;
+        si.addEventListener("click",ev=>{
+          ev.stopPropagation();
+          currentSubSpec = (currentSubSpec===sp) ? "" : sp;
+          legendEl.querySelectorAll(".leg-sub").forEach(x=>x.classList.remove("on"));
+          if(currentSubSpec) si.classList.add("on");
+          applyFilters();
+        });
+        subBox.appendChild(si);
+      });
+      wrap.appendChild(subBox);
+    }
+
+    item.addEventListener("click",ev=>{
+      // The caret expands the sub-list; the row itself toggles the discipline
+      if(subBox && ev.target.classList.contains("leg-exp")){
+        const open=subBox.classList.toggle("open");
+        item.querySelector(".leg-exp").textContent = open ? "▾" : "▸";
+        return;
+      }
+      if(activeCategories.has(cat)){activeCategories.delete(cat);item.classList.add("off");}
+      else{activeCategories.add(cat);item.classList.remove("off");}
+      applyFilters();
+    });
+    legendEl.appendChild(wrap);
+  });
+
+  const btnRow=document.createElement("div");btnRow.className="leg-btns";
+  const showAll=document.createElement("div");showAll.className="leg-btn";showAll.textContent="Show All";
+  showAll.addEventListener("click",()=>{
+    Object.keys(COLORS).forEach(c=>activeCategories.add(c));
+    FACILITY_TYPES.forEach(t=>activeFacilityTypes.add(t));
+    currentSubSpec="";
+    legendEl.querySelectorAll(".leg-item").forEach(el=>el.classList.remove("off"));
+    legendEl.querySelectorAll(".leg-sub").forEach(el=>el.classList.remove("on"));
+    applyFilters();
+  });
+  const deselectAll=document.createElement("div");deselectAll.className="leg-btn";deselectAll.textContent="Deselect All";
+  deselectAll.addEventListener("click",()=>{
+    activeCategories.clear();
+    legendEl.querySelectorAll(".leg-item").forEach(el=>el.classList.add("off"));
+    applyFilters();
+  });
+  btnRow.appendChild(showAll);btnRow.appendChild(deselectAll);
+  legendEl.appendChild(btnRow);
+
+  // Collapsible legend on small screens (keeps the map visible on phones)
+  if(mqMobile.matches) legendEl.classList.add("collapsed");
+  document.getElementById("legend-title").addEventListener("click",()=>{
+    if(mqMobile.matches) legendEl.classList.toggle("collapsed");
+  });
+}
+buildLegend();
+
+// ── SPECIALTY FILTER ─────────────────────────────────────────────────────────
+document.getElementById("spec-filter").addEventListener("change",e=>{currentSpec=e.target.value;applyFilters();});
+
+// ── OPEN GYMS TOGGLE ───────────────────────────────────────────────────────────
+const openGymsBtn = document.getElementById("open-gyms-toggle");
+openGymsBtn.addEventListener("click",()=>{
+  openGymsOnly = !openGymsOnly;
+  openGymsBtn.classList.toggle("active", openGymsOnly);
+  if(openGymsOnly) track("click","[Open Gyms filter]");
+  applyFilters();
+  if(tableMode) renderTable();
+});
+
+// ── MAP / LIST VIEW TOGGLE ───────────────────────────────────────────────────
+const viewToggle = document.getElementById("view-toggle");
+const tableView = document.getElementById("table-view");
+viewToggle.addEventListener("click",()=>{
+  tableMode = !tableMode;
+  tableView.classList.toggle("active", tableMode);
+  container.style.display = tableMode ? "none" : "";
+  viewToggle.textContent = tableMode ? "🗺 Map view" : "▤ List view";
+  if(tableMode) renderTable();
+});
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+const si=document.getElementById("search-input"),sc=document.getElementById("search-clear");
+si.addEventListener("input",e=>{currentSearch=e.target.value;sc.style.display=currentSearch?"block":"none";applyFilters();});
+sc.addEventListener("click",()=>{si.value="";currentSearch="";sc.style.display="none";applyFilters();});
+
+// ── ZOOM BUTTONS ──────────────────────────────────────────────────────────────
+document.getElementById("zoom-in").addEventListener("click",()=>svg.transition().duration(300).call(zoom.scaleBy,1.6));
+document.getElementById("zoom-out").addEventListener("click",()=>svg.transition().duration(300).call(zoom.scaleBy,0.625));
+
+// ── RESIZE ────────────────────────────────────────────────────────────────────
+window.addEventListener("resize",()=>{
+  W=container.clientWidth;H=container.clientHeight;
+  svg.attr("width",W).attr("height",H);
+  fitProjection();
+  positionClones();
+  countryG.selectAll("path").attr("d",pathGen);
+  gridG.selectAll("path").attr("d",pathGen);
+  // Re-apply the current zoom transform so x-wrap / y-clamp recompute for the new size
+  svg.call(zoom.transform, d3.zoomTransform(svg.node()));
+  const k=d3.zoomTransform(svg.node()).k;
+  curK = k;
+  dotGroup.selectAll(".school-dot-g").attr("transform",d=>`translate(${cx(d)},${cy(d)}) scale(${dotScale(k)})`);
+  positionOnlineHub();
+});
+
+// ── DETAIL VIEW + SUBMIT / CLAIM FORMS ──────────────────────────────────────
+const ov = document.getElementById("ov");
+const ovTitle = document.getElementById("ov-title");
+const ovBody = document.getElementById("ov-body");
+function openOv(title, color){ ovTitle.textContent=title; ov.style.setProperty("--ov-color",color||"#cc0000"); ov.classList.add("active"); document.body.style.overflow="hidden"; }
+function closeOv(){ ov.classList.remove("active"); document.body.style.overflow=""; }
+document.getElementById("ov-close").addEventListener("click",closeOv);
+ov.addEventListener("click",e=>{ if(e.target===ov) closeOv(); });
+function igHandle(h){ return h.trim().replace(/^@/,"").replace(/\s+/g,""); }
+
+// Full-page detail for a single school, with a "This is my school" claim CTA.
+function showDetail(d){
+  if(!d) return;
+  track("click","[Details] "+d.name);
+  const firstCat = (d.categories||[]).find(c=>COLORS[c]);
+  openOv(d.name, firstCat?COLORS[firstCat]:"#cc0000");
+  let h = "";
+  if(d.type) h += `<div class="ov-type">${esc(d.type)}</div>`;
+  h += `<div class="ov-row"><b>${d.online?"🌐":"📍"}</b> ${esc(d.online?"Online / virtual training":(d.address||d.location||"—"))}</div>`;
+  if(d.address && d.location && !d.online && d.address!==d.location) h += `<div class="ov-row"><b>Area:</b> ${esc(d.location)}</div>`;
+  let links="";
+  if(d.website) links += `<a class="ov-link" href="${esc(d.website)}" target="_blank" rel="noopener">🌐 Visit website ↗</a>`;
+  if(d.instagram) links += `<a class="ov-link ig" href="https://instagram.com/${esc(igHandle(d.instagram))}" target="_blank" rel="noopener">◉ ${esc(d.instagram)} ↗</a>`;
+  if(links) h += `<div class="ov-links">${links}</div>`;
+  if(d.categories && d.categories.length) h += `<div class="ov-sec-title">Facility type</div><div class="ov-tags">${d.categories.map(c=>`<span class="ov-tag">${esc(c)}</span>`).join("")}</div>`;
+  if(d.specialties && d.specialties.length) h += `<div class="ov-sec-title">What they train</div><div class="ov-tags">${d.specialties.map(c=>`<span class="ov-tag">${esc(c)}</span>`).join("")}</div>`;
+  h += `<button class="ov-claim" id="ov-claim-btn">🏷 This is my facility — claim it</button>`;
+  ovBody.innerHTML = h;
+  document.getElementById("ov-claim-btn").addEventListener("click",()=>showClaimForm(d));
+}
+
+// "This is my school" claim form (admin-reviewed; doesn't change the listing yet).
+function showClaimForm(d){
+  track("click","[Claim] "+(d?d.name:""));
+  openOv("Claim "+(d?d.name:"this facility"),"#f5a623");
+  ovBody.innerHTML = `
+    <div class="ov-note">Tell us how to reach you and we'll connect this listing to you. <b>An admin will review your claim</b> before anything changes — claiming doesn't edit the listing yet.</div>
+    <div class="ov-form">
+      <label><span>Your name</span><input id="cl-name" autocomplete="name"></label>
+      <label><span>Email</span><input id="cl-email" type="email" autocomplete="email"></label>
+      <label><span>Phone</span><input id="cl-phone" type="tel" autocomplete="tel"></label>
+      <label><span>Anything else? (optional)</span><textarea id="cl-msg" rows="3"></textarea></label>
+      <button class="ov-submit" id="cl-send">Submit claim for review</button>
+      <div class="ov-msg" id="cl-out"></div>
+    </div>`;
+  document.getElementById("cl-send").addEventListener("click",async()=>{
+    const out=document.getElementById("cl-out"); out.className="ov-msg"; out.textContent="";
+    const name=document.getElementById("cl-name").value.trim();
+    const email=document.getElementById("cl-email").value.trim();
+    const phone=document.getElementById("cl-phone").value.trim();
+    if(!name && !email && !phone){ out.className="ov-msg err"; out.textContent="Please add a name and at least one way to reach you."; return; }
+    const btn=document.getElementById("cl-send"); btn.disabled=true; btn.textContent="Submitting…";
+    try{
+      await postRow("claims", { school_id:(d&&d.id)||null, school_name:(d&&d.name)||"", claimant_name:name, claimant_email:email, claimant_phone:phone, message:document.getElementById("cl-msg").value.trim() });
+      ovBody.innerHTML = `<div class="ov-note" style="text-align:center;color:#7bc67e;font-size:14px;padding:24px 0">✓ Thanks! Your claim was sent. An admin will review it and get in touch.</div><button class="ov-submit" id="cl-done">Done</button>`;
+      document.getElementById("cl-done").addEventListener("click",closeOv);
+    }catch(e){ out.className="ov-msg err"; out.textContent="Couldn't submit: "+e.message; btn.disabled=false; btn.textContent="Submit claim for review"; }
+  });
+}
+
+// "Add a school" submission form (admin-reviewed before it appears on the map).
+function showSubmitForm(){
+  track("click","[Add a facility]");
+  openOv("Add a facility","#cc0000");
+  const cats = Object.keys(COLORS).map(c=>`<label class="ov-chk"><input type="checkbox" data-cat value="${esc(c)}">${esc(c)}</label>`).join("");
+  const specs = ALL_SPECIALTIES.map(c=>`<label class="ov-chk"><input type="checkbox" data-spec value="${esc(c)}">${esc(c)}</label>`).join("");
+  ovBody.innerHTML = `
+    <div class="ov-note">Suggest a facility for the map. Fill in what you know — everything's optional except the name. <b>An admin will review it</b> before it appears.</div>
+    <div class="ov-form">
+      <label><span>Facility name *</span><input id="sb-name"></label>
+      <label><span>Location (city, state / country)</span><input id="sb-location" placeholder="e.g. Atlanta, GA"></label>
+      <label><span>Address (optional)</span><input id="sb-address"></label>
+      <label><span>Website</span><input id="sb-website" placeholder="https://"></label>
+      <label><span>Instagram</span><input id="sb-instagram" placeholder="@handle"></label>
+      <label class="ov-chk" style="margin-bottom:14px"><input type="checkbox" id="sb-online">&nbsp;This is an online / virtual-only facility</label>
+      <div class="ov-sec-title">What they are</div>
+      <div class="ov-checks">${cats}</div>
+      <div class="ov-sec-title">What they train</div>
+      <div class="ov-checks">${specs}</div>
+      <label style="margin-top:14px"><span>Your name</span><input id="sb-submitter" autocomplete="name"></label>
+      <label><span>Your email (so we can follow up)</span><input id="sb-email" type="email" autocomplete="email"></label>
+      <label class="ov-mine"><input type="checkbox" id="sb-mine"> This is my facility</label>
+      <button class="ov-submit" id="sb-send">Submit for review</button>
+      <div class="ov-msg" id="sb-out"></div>
+    </div>`;
+  document.getElementById("sb-send").addEventListener("click",async()=>{
+    const out=document.getElementById("sb-out"); out.className="ov-msg"; out.textContent="";
+    const name=document.getElementById("sb-name").value.trim();
+    if(!name){ out.className="ov-msg err"; out.textContent="Please enter the facility name."; return; }
+    const getChk=attr=>[...ovBody.querySelectorAll(`input[${attr}]:checked`)].map(i=>i.value);
+    const btn=document.getElementById("sb-send"); btn.disabled=true; btn.textContent="Submitting…";
+    try{
+      await postRow("submissions", {
+        name, location:document.getElementById("sb-location").value.trim(),
+        address:document.getElementById("sb-address").value.trim(),
+        website:document.getElementById("sb-website").value.trim(),
+        instagram:document.getElementById("sb-instagram").value.trim(),
+        online:document.getElementById("sb-online").checked,
+        categories:getChk("data-cat"), specialties:getChk("data-spec"),
+        submitter_name:document.getElementById("sb-submitter").value.trim(),
+        submitter_email:document.getElementById("sb-email").value.trim(),
+        is_my_school:document.getElementById("sb-mine").checked
+      });
+      ovBody.innerHTML = `<div class="ov-note" style="text-align:center;color:#7bc67e;font-size:14px;padding:24px 0">✓ Thanks! Your facility was submitted. An admin will review it and add it to the map.</div><button class="ov-submit" id="sb-done">Done</button>`;
+      document.getElementById("sb-done").addEventListener("click",closeOv);
+    }catch(e){ out.className="ov-msg err"; out.textContent="Couldn't submit: "+e.message; btn.disabled=false; btn.textContent="Submit for review"; }
+  });
+}
+
+async function postRow(table, row){
+  const res = await fetch(`/api/${table}`, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(row)
+  });
+  if(!res.ok){ let m="HTTP "+res.status; try{const j=await res.json(); if(j.error)m=j.error;}catch(e){} throw new Error(m); }
+}
+
+document.getElementById("pc-more").addEventListener("click",e=>{ e.preventDefault(); if(popupSchool) showDetail(popupSchool); });
+document.getElementById("add-school-btn").addEventListener("click",showSubmitForm);
+
+// ── LOAD WORLD MAP ────────────────────────────────────────────────────────────
+// Higher-resolution (50m) coastlines/borders so deep zoom stays crisp. Borders
+// use non-scaling strokes (see CSS) so the lines stay thin as you zoom in.
+// Pull the live school list from our API (Cloudflare Worker + D1); if it's
+// unreachable or empty we fall back to the snapshot embedded above so the map
+// always renders something.
+function normalizeSchool(r){ return {
+  id:r.id, name:r.name, type:r.type||"", categories:r.categories||[], specialties:r.specialties||[],
+  location:r.location||"", region:r.region||"", address:r.address||"", website:r.website||"",
+  instagram:r.instagram||"", lat:r.lat, lon:r.lon, online:!!r.online
+}; }
+async function loadSchools(){
+  try{
+    const res = await fetch("/api/schools");
+    if(res.ok){ const rows = await res.json(); if(Array.isArray(rows) && rows.length){ SCHOOLS = rows.map(normalizeSchool); } }
+  }catch(e){ /* keep embedded fallback */ }
+}
+function renderSchoolData(){
+  SCHOOLS.forEach(normalizeCategories);
+  buildLocMap();
+  visibleSchools = new Set(SCHOOLS);
+  document.getElementById("stat-schools").textContent = SCHOOLS.length;
+  buildLegend();
+  renderDots();
+  drawOnlineHub();
+}
+
+let worldDrawn=false, schoolsLoaded=false;
+function maybeRender(){ if(worldDrawn && schoolsLoaded) renderSchoolData(); }
+
+fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json")
+  .then(r=>r.json())
+  .then(world=>{
+    const countries=topojson.feature(world,world.objects.countries);
+    const borders=topojson.mesh(world,world.objects.countries,(a,b)=>a!==b);
+    // Drop Antarctica (ISO numeric 010 / 10, or by name)
+    const landFeatures = countries.features.filter(f=>{
+      const id=String(f.id), name=(f.properties&&f.properties.name)||"";
+      return id!=="010" && id!=="10" && name!=="Antarctica";
+    });
+    countryG.selectAll("path.country").data(landFeatures).enter().append("path").attr("class","country").attr("d",pathGen);
+    countryG.append("path").datum(borders).attr("class","country-border").attr("d",pathGen);
+  })
+  .catch(()=>{})
+  .finally(()=>{ document.getElementById("loading").style.display="none"; worldDrawn=true; maybeRender(); });
+
+loadSchools().finally(()=>{ schoolsLoaded=true; maybeRender(); });
+</script>
+</body>
+</html>

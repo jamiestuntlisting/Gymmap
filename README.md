@@ -63,6 +63,15 @@ default branch deploys automatically. No environment variables are needed —
 the D1 binding is declared in `wrangler.jsonc`, and the admin password is
 stored (hashed) in the database itself.
 
+## The old Vercel deployment
+
+The `gymmap` Vercel project still builds from this repo, but it only serves the
+static files in `public/` — it has **no `/api/*` routes**, because the API is a
+Cloudflare Worker. Users landing there saw a map that looked fine (it silently
+falls back to `fallback-data.js`) but got `HTTP 404` on submit, claim, and admin
+login. `vercel.json` now redirects every path to the Cloudflare Worker, so old
+links keep working. Deleting the Vercel project is safe once that's confirmed.
+
 ## API
 
 Public: `GET /api/schools`, `POST /api/track`, `POST /api/submissions`,
